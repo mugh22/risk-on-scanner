@@ -73,6 +73,7 @@ Keep the repository private, then create an issue titled exactly `Portfolio Conf
 ```
 
 `Average Cost` and `Target %` are optional. `Enabled` accepts `Yes` or `No`. The workflow's built-in GitHub token reads the issue; no additional secret, database, or wallet connection is required. If the issue is missing or temporarily unavailable, the normal market report still runs and emails successfully.
+The portfolio section reports estimated value, current allocation, return versus average cost, technical signal, rally heat, and the corresponding action for each supported holding.
 
 Example headline: `RISK-ON SCORE: 74/100 — RISK-ON`. Ranked rows include price, signal, relative returns, RSI, volume ratio, entry zone, targets, and invalidation. Live values are always calculated and never hardcoded.
 

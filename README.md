@@ -78,6 +78,8 @@ The portfolio section reports estimated value, current allocation, return versus
 
 Example headline: `RISK-ON SCORE: 74/100 — RISK-ON`. Ranked rows include price, signal, relative returns, RSI, volume ratio, entry zone, targets, and invalidation. Live values are always calculated and never hardcoded.
 
+Each exit-risk component shows both a strict confirmed-risk score and a separate direction label. Direction compares the underlying evidence with the previous scan, so `Healthy · worsening` can provide an early warning before the component crosses a score threshold. A genuine zero score renders as an empty track.
+
 ## Limitations
 
 Daily candles can miss intraday changes. Exchange availability and symbol mapping vary. The first persisted run has limited comparison history. Market-cap dominance is obtained from CoinGecko as optional context and accumulated in scanner state over time; if that source is unavailable, the core Binance-based scan and email still complete. The decision model uses confirmation across independent signal families and does not treat fixed dominance levels as permanent truths. Signals are systematic technical research, not financial advice or guaranteed outcomes.

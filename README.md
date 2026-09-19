@@ -9,6 +9,8 @@ A selective, transparent Python 3.12 scanner that measures crypto risk appetite,
 - Produces a separate 0–100 Alt Exit Risk Score and a direct `HOLD`, `CAUTION`, `REDUCE`, or `EXIT MOST ALT RISK` call.
 - Detects deterioration using median alt/BTC relative strength, participation breadth and its 7-day change, failed highs/exhaustion, BTC trend stress, and capital concentration.
 - Adds Gmail-safe component bars, a rolling 20-scan exit-risk sparkline, and an optional BTC/ETH/stablecoin dominance snapshot to the same email.
+- Adds a separate Rally Heat / Profit Protection score so partial profit-taking is not confused with a broad market exit.
+- Reads an optional phone-editable portfolio from the private repository's `Portfolio Configuration — Edit This Issue` GitHub issue, automatically analyzes owned assets, and places portfolio actions before general opportunities.
 - Produces a 0–100 Alt Strength Score from 7D/30D BTC-relative returns, trend, momentum, volume, and breakout confirmation.
 - Classifies each asset as `BUY`, `WATCH`, or `NO SIGNAL`. A BUY requires a risk-on regime and at least six independent confirmations.
 - Suppresses BUY signals when RSI, distance above EMA20, or the daily move indicates chasing.
@@ -57,6 +59,20 @@ The workflow can be launched from **Actions → Crypto risk-on scanner → Run w
 - Adjust score weights under `weights`; values need not sum to 100 because calculations normalize them.
 - Adjust selectivity and overextension thresholds under `signals`.
 - Run `python -m src.scanner --help` for path overrides.
+
+## Phone-editable portfolio
+
+Keep the repository private, then create an issue titled exactly `Portfolio Configuration — Edit This Issue`. Paste this table into the issue body and edit it from the GitHub mobile app whenever holdings change:
+
+```markdown
+| Symbol | Quantity | Average Cost | Target % | Enabled |
+|---|---:|---:|---:|---|
+| BTC | 0.5 | 45000 | 40 | Yes |
+| SOL | 12 | 110 | 20 | Yes |
+| USDT | 5000 | 1 | 20 | Yes |
+```
+
+`Average Cost` and `Target %` are optional. `Enabled` accepts `Yes` or `No`. The workflow's built-in GitHub token reads the issue; no additional secret, database, or wallet connection is required. If the issue is missing or temporarily unavailable, the normal market report still runs and emails successfully.
 
 Example headline: `RISK-ON SCORE: 74/100 — RISK-ON`. Ranked rows include price, signal, relative returns, RSI, volume ratio, entry zone, targets, and invalidation. Live values are always calculated and never hardcoded.
 

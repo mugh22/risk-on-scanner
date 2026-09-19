@@ -78,6 +78,7 @@ def render(
     context: dict, exit_risk: ExitRiskResult, history: list[float],
     dominance: dict | None = None, portfolio_rows: list[dict] | None = None,
     portfolio_note: str | None = None, market_heat: dict | None = None,
+    quote_time: datetime | None = None, quote_source: str | None = None,
 ) -> tuple[str, str]:
     portfolio_rows = portfolio_rows or []
     market_heat = market_heat or {"score": 0, "level": "LOW", "action": "HOLD"}
@@ -87,7 +88,7 @@ def render(
     buys = [c for c in ranked if c.signal == "BUY"]
     others = [c for c in ranked if c.signal != "BUY"]
     top = buys + others[:max(0, 10-len(buys))]
-    rows = "".join(f"<tr><td><b>{escape(c.symbol)}</b></td><td>{c.score:.0f}</td><td><b>{c.signal}</b></td><td>${_n(c.price, 4)}</td><td>{c.rel_30d:+.1f}%</td><td>{c.weekly_rel:+.1f}%</td><td>{c.daily_rel_confirmations}/3</td><td>{c.rsi:.1f}</td><td>{c.volume_ratio:.1f}x</td><td>{_n(c.entry_low,4)}–{_n(c.entry_high,4)}</td><td>{_n(c.target1,4)} / {_n(c.target2,4)}</td><td>{_n(c.invalidation,4)}</td></tr>" for c in top)
+    rows = "".join(f"<tr><td><b>{escape(c.symbol)}</b></td><td>{c.score:.0f}</td><td><b>{c.signal}</b></td><td>${_n(c.live_price, 4)}</td><td>${_n(c.price, 4)}</td><td>{c.rel_30d:+.1f}%</td><td>{c.weekly_rel:+.1f}%</td><td>{c.daily_rel_confirmations}/3</td><td>{c.rsi:.1f}</td><td>{c.volume_ratio:.1f}x</td><td>{_n(c.entry_low,4)}–{_n(c.entry_high,4)}</td><td>{_n(c.target1,4)} / {_n(c.target2,4)}</td><td>{_n(c.invalidation,4)}</td></tr>" for c in top)
     updates = "".join(f"<li>{escape(n)}</li>" for n in notes) or "<li>No material signal change.</li>"
     evidence = exit_risk.red_flags or exit_risk.supports or ["No confirmed broad exit flag."]
     evidence_html = "".join(f"<li>{escape(item)}</li>" for item in evidence[:4])
@@ -104,7 +105,7 @@ def render(
 <h2>Why this call</h2><ul class='compact'>{evidence_html}</ul>
 <div class='details'><h2>Market evidence</h2><h3>Exit-risk components</h3><table role='presentation' class='components'>{_bars(exit_risk.components)}</table><h3>Exit-risk trend</h3>{_history_chart(history)}
 <h3>{title}</h3><div class='badge'>{delta}</div><p><b>Closed-candle evidence:</b> 30-day regime {context['month_regime']:.0f}/100 · Weekly close {context['weekly_close']:.0f}/100 · Last 3 daily closes {context['last_3_closes']:.0f}/100</p><p>BTC trend: {'Constructive' if context['btc_constructive'] else 'Weak/mixed'}<br>ETH/BTC: {'Strengthening' if context['eth_btc_positive'] else 'Weakening'}<br>Breadth above EMA20: {context['breadth_20']:.0f}%<br>Breadth outperforming BTC (30D): {context['breadth_rel30']:.0f}%<br>Constructive completed weekly structures: {context['weekly_breadth']:.0f}%<br>Confirming 2 of last 3 daily closes vs BTC: {context['daily_confirmation_breadth']:.0f}%</p>{dominance_html}
-<h2>Market opportunities</h2><div class='scroll'><table><tr><th>Asset</th><th>Score</th><th>Signal</th><th>Closed price</th><th>30D/BTC</th><th>Week/BTC</th><th>3D confirms</th><th>RSI</th><th>Vol</th><th>Entry zone</th><th>Targets</th><th>Invalidation</th></tr>{rows}</table></div></div>
+<h2>Market opportunities</h2><p class='muted'>Live quotes fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S UTC} from {escape(quote_source or 'live market source')}. Signal close is the latest completed daily candle used by the model.</p><div class='scroll'><table><tr><th>Asset</th><th>Score</th><th>Signal</th><th>Live price</th><th>Signal close</th><th>30D/BTC</th><th>Week/BTC</th><th>3D confirms</th><th>RSI</th><th>Vol</th><th>Entry zone</th><th>Targets</th><th>Invalidation</th></tr>{rows}</table></div></div>
 <p><small>Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}. Signals use completed daily and weekly candles; intraday movement cannot flip a confirmed call. Quantitative research only; not financial advice or a guarantee.</small></p></body></html>"""
     portfolio_text = "\n".join(f"{r['symbol']}: {r['action']} | heat {r['heat']:.0f} | allocation {r['allocation']:.1f}%" for r in portfolio_rows) or (portfolio_note or "Portfolio not configured.")
     text = f"ALT EXIT RISK: {exit_risk.score:.0f}/100 — {exit_risk.level}\nCALL: {exit_risk.call}\nRALLY HEAT: {market_heat['score']:.0f}/100 — {market_heat['action']}\n\nYOUR PORTFOLIO\n{portfolio_text}\n\nCHANGES\n" + "\n".join(notes or ["No material signal change."]) + "\n\nMARKET EVIDENCE\n" + "\n".join(f"- {x}" for x in evidence) + "\n\n" + title + "\n" + delta + "\n\nTechnical research only; not financial advice."

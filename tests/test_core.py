@@ -105,6 +105,15 @@ def test_buy_is_always_in_opportunity_table_and_bars_are_email_safe():
     assert "C10" in table and "BUY" in table
     assert "bar-track" in html and "background:#e2e8f0" in html
     assert html.index("Your portfolio — actions first") < html.index("Market evidence")
+    assert "Live price" in html and "Signal close" in html
+
+
+def test_report_prefers_live_price_but_keeps_signal_close():
+    item = coin(price=100, live_price=107); item.score = 80; item.signal = "WATCH"; levels(item, 110, 90)
+    risk = ExitRiskResult(10, "LOW", "HOLD", "Healthy", {"Relative strength": 0})
+    context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
+    html, _ = render(70, 70, [item], [], context, risk, [10, 10])
+    assert "$107.0000" in html and "$100.0000" in html
 
 
 def test_zero_component_still_has_visible_bar_track():

@@ -46,6 +46,7 @@ class CoinResult:
     target2: float | None = None
     invalidation: float | None = None
     reward_risk: float | None = None
+    live_price: float | None = None
 
 
 def score_coin(c: CoinResult, weights: dict[str, float]) -> tuple[float, list[str]]:

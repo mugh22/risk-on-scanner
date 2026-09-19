@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import httpx
 import pandas as pd
@@ -14,6 +16,13 @@ BASES = (
     "https://api.binance.com",
     "https://api.binance.us",
 )
+
+
+@dataclass(frozen=True)
+class SpotSnapshot:
+    prices: dict[str, float]
+    fetched_at: datetime
+    source: str
 
 
 class BinanceClient:
@@ -50,3 +59,30 @@ class BinanceClient:
                         break
                     time.sleep(2 ** attempt)
         raise RuntimeError(f"Unable to load {pair}: {error}")
+
+    def spot_prices(self, pairs: list[str]) -> SpotSnapshot:
+        """Fetch uncached spot quotes immediately before report rendering."""
+        wanted = set(pairs)
+        error: Exception | None = None
+        for base in BASES:
+            for attempt in range(self.retries):
+                try:
+                    response = self.client.get(
+                        f"{base}/api/v3/ticker/price",
+                        headers={"Cache-Control": "no-cache", "Pragma": "no-cache"},
+                    )
+                    if response.status_code in (418, 429):
+                        time.sleep(2 ** attempt); continue
+                    response.raise_for_status()
+                    rows = response.json()
+                    prices = {row["symbol"]: float(row["price"]) for row in rows if row.get("symbol") in wanted and float(row.get("price", 0)) > 0}
+                    if len(prices) != len(wanted):
+                        raise ValueError(f"Only {len(prices)}/{len(wanted)} requested live quotes returned")
+                    fetched_at = datetime.now(timezone.utc)
+                    LOG.info("Loaded %d/%d live quotes from %s", len(prices), len(wanted), base)
+                    return SpotSnapshot(prices, fetched_at, base)
+                except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                    error = exc
+                    LOG.warning("Live quote attempt %s/%s failed via %s: %s", attempt + 1, self.retries, base, exc)
+                    time.sleep(2 ** attempt)
+        raise RuntimeError(f"Unable to load live quotes: {error}")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -77,6 +78,11 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             coins.append(analyze(symbol,frame,btc_frame,cfg["weights"]["alt_strength"]))
         except Exception as exc: LOG.error("Skipping %s: %s",symbol,exc)
     if not coins: raise RuntimeError("No altcoin data was successfully analyzed")
+    spot = client.spot_prices([f"BTC{quote}", *[f"{coin.symbol}{quote}" for coin in coins]])
+    quote_time, quote_source = spot.fetched_at, spot.source
+    btc.live_price = spot.prices[f"BTC{quote}"]
+    for coin in coins:
+        coin.live_price = spot.prices[f"{coin.symbol}{quote}"]
     score, context=market_score(btc,ethbtc,coins,cfg["weights"]["risk_on"])
     for coin in coins: coin.signal=classify(coin,score,cfg["signals"])
     previous=load(state_path); comparable=previous if previous.get("model_version")==MODEL_VERSION else {}
@@ -98,7 +104,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             raw_rows.append({"holding": holding, "price": 1.0, "signal": "CASH", "heat": 0.0, "action": "HOLD AS RESERVE"})
         elif coin:
             protection = protections[holding.symbol]
-            raw_rows.append({"holding": holding, "price": coin.price, "signal": coin.signal, "heat": protection.score, "action": protection.action})
+            raw_rows.append({"holding": holding, "price": coin.live_price, "signal": coin.signal, "heat": protection.score, "action": protection.action})
         elif holding.symbol in fallback_prices:
             raw_rows.append({"holding": holding, "price": fallback_prices[holding.symbol], "signal": "PRICE ONLY", "heat": 0.0, "action": "NOT SCORED"})
     total_value = sum(row["holding"].quantity * row["price"] for row in raw_rows)
@@ -107,7 +113,9 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         holding = row.pop("holding"); value = holding.quantity * row["price"]
         pnl = "N/A" if holding.average_cost is None else f"{(row['price']/holding.average_cost-1)*100:+.1f}%"
         portfolio_rows.append({**row, "symbol": holding.symbol, "quantity": holding.quantity, "value": value, "allocation": 100*value/max(total_value, .000001), "pnl": pnl})
-    html,text=render(score,comparable.get("risk_score"),coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat)
+    if (datetime.now(timezone.utc) - quote_time).total_seconds() > 180:
+        raise RuntimeError("Live quotes became stale before report rendering")
+    html,text=render(score,comparable.get("risk_score"),coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,quote_time,quote_source)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
     if exit_risk.score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"

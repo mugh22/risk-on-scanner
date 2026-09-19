@@ -16,7 +16,7 @@ from .market_data import BinanceClient
 from .reporting import render
 from .scoring import CoinResult, regime, score_coin
 from .signals import classify, levels
-from .state import changes, load, save
+from .state import append_run, changes, load, save
 
 LOG = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ def market_score(btc: CoinResult, ethbtc: pd.DataFrame | None, coins: list[CoinR
     return round(score,1), {"btc_constructive":btc_component>=75,"eth_btc_positive":eth_component>=75,"breadth_20":breadth20,"breadth_rel30":breadth30}
 
 
-def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False) -> int:
+def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None) -> int:
     cfg = yaml.safe_load(Path(config_path).read_text()); data_cfg=cfg["data"]
     client = BinanceClient(data_cfg["timeout_seconds"], data_cfg["retries"]); quote=data_cfg["quote"]
     LOG.info("Scan started using Binance public daily candles")
@@ -77,11 +77,14 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
     else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
-    save(state_path,{"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"dominance":dominance or previous.get("dominance",{}),"signals":signals}); LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0
+    state={"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"dominance":dominance or previous.get("dominance",{}),"signals":signals}
+    save(state_path,state)
+    append_run(history_path,{**state,"regime":regime(score),"buy_count":sum(c.signal=="BUY" for c in coins),"watch_count":sum(c.signal=="WATCH" for c in coins)})
+    LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0
 
 
 def main() -> int:
-    load_dotenv(); p=argparse.ArgumentParser(); p.add_argument("--config",default="config.yaml"); p.add_argument("--state",default="state.json"); p.add_argument("--report-dir",default="reports"); p.add_argument("--no-email",action="store_true"); a=p.parse_args(); logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(name)s: %(message)s"); return run(a.config,a.state,a.report_dir,a.no_email)
+    load_dotenv(); p=argparse.ArgumentParser(); p.add_argument("--config",default="config.yaml"); p.add_argument("--state",default="state.json"); p.add_argument("--history"); p.add_argument("--report-dir",default="reports"); p.add_argument("--no-email",action="store_true"); a=p.parse_args(); logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(name)s: %(message)s"); return run(a.config,a.state,a.report_dir,a.no_email,a.history)
 
 
 if __name__ == "__main__": raise SystemExit(main())

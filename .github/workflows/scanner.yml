@@ -1,0 +1,72 @@
+name: Crypto risk-on scanner
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs at 12:00 and 20:00 America/Chicago year-round; UTC cron fires hourly
+    # around each window and the timezone gate below selects the exact local hour.
+    - cron: "0 17,18,1,2 * * *"
+
+concurrency:
+  group: risk-on-scanner
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gate scheduled runs by Central time
+        id: gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$(TZ=America/Chicago date +%H)" == "12" || "$(TZ=America/Chicago date +%H)" == "20" ]]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: pip install -r requirements.txt
+      - name: Restore scanner state
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: scanner-state-${{ github.run_id }}
+          restore-keys: scanner-state-
+      - name: Test
+        if: steps.gate.outputs.run == 'true'
+        run: pytest -q
+      - name: Scan and email
+        if: steps.gate.outputs.run == 'true'
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python -m src.scanner
+      - name: Save scanner state
+        if: steps.gate.outputs.run == 'true' && always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: scanner-state-${{ github.run_id }}
+      - name: Upload report
+        if: steps.gate.outputs.run == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scanner-report-${{ github.run_number }}
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 30
+

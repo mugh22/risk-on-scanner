@@ -8,6 +8,7 @@ import httpx
 
 LOG = logging.getLogger(__name__)
 ISSUE_TITLE = "Portfolio Configuration — Edit This Issue"
+COINGECKO_IDS = {"AERO": "aerodrome-finance"}
 
 
 @dataclass(frozen=True)
@@ -82,3 +83,21 @@ def load_portfolio() -> tuple[list[Holding], str | None]:
     except (httpx.HTTPError, ValueError) as exc:
         LOG.warning("Portfolio issue could not be read: %s", type(exc).__name__)
         return [], "Portfolio data could not be read; the market report still completed normally."
+
+
+def fallback_spot_prices(symbols: list[str]) -> dict[str, float]:
+    """Price-only fallback for owned assets without Binance candle coverage."""
+    ids = {symbol: COINGECKO_IDS[symbol] for symbol in symbols if symbol in COINGECKO_IDS}
+    if not ids:
+        return {}
+    try:
+        response = httpx.get(
+            "https://api.coingecko.com/api/v3/simple/price",
+            params={"ids": ",".join(ids.values()), "vs_currencies": "usd"},
+            timeout=15,
+        )
+        response.raise_for_status(); payload = response.json()
+        return {symbol: float(payload[coin_id]["usd"]) for symbol, coin_id in ids.items() if payload.get(coin_id, {}).get("usd")}
+    except (httpx.HTTPError, ValueError, TypeError):
+        LOG.warning("Fallback portfolio prices could not be read")
+        return {}

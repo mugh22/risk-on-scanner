@@ -13,7 +13,7 @@ from .dominance import safe_snapshot
 from .exit_risk import assess_exit_risk
 from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
-from .portfolio import load_portfolio
+from .portfolio import fallback_spot_prices, load_portfolio
 from .profit_protection import assess_profit_protection, heat_call
 from .reporting import render
 from .scoring import CoinResult, regime, score_coin
@@ -91,6 +91,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     market_heat_level, market_heat_action = heat_call(market_heat_score)
     market_heat = {"score": market_heat_score, "level": market_heat_level, "action": market_heat_action}
     raw_rows = []
+    fallback_prices = fallback_spot_prices([holding.symbol for holding in holdings if holding.symbol not in by_symbol])
     for holding in holdings:
         coin = by_symbol.get(holding.symbol)
         if holding.symbol in {"USDT", "USDC", "USD"}:
@@ -98,6 +99,8 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         elif coin:
             protection = protections[holding.symbol]
             raw_rows.append({"holding": holding, "price": coin.price, "signal": coin.signal, "heat": protection.score, "action": protection.action})
+        elif holding.symbol in fallback_prices:
+            raw_rows.append({"holding": holding, "price": fallback_prices[holding.symbol], "signal": "PRICE ONLY", "heat": 0.0, "action": "NOT SCORED"})
     total_value = sum(row["holding"].quantity * row["price"] for row in raw_rows)
     portfolio_rows = []
     for row in raw_rows:

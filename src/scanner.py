@@ -81,8 +81,11 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     spot = client.spot_prices([f"BTC{quote}", *[f"{coin.symbol}{quote}" for coin in coins]])
     quote_time, quote_source = spot.fetched_at, spot.source
     btc.live_price = spot.prices[f"BTC{quote}"]
+    levels(btc, float(btc_frame.high.tail(60).iloc[:-1].max()), float(btc_frame.low.tail(20).min()), btc.live_price)
     for coin in coins:
         coin.live_price = spot.prices[f"{coin.symbol}{quote}"]
+        frame = frames[coin.symbol]
+        levels(coin, float(frame.high.tail(60).iloc[:-1].max()), float(frame.low.tail(20).min()), coin.live_price)
     score, context=market_score(btc,ethbtc,coins,cfg["weights"]["risk_on"])
     for coin in coins: coin.signal=classify(coin,score,cfg["signals"])
     previous=load(state_path); comparable=previous if previous.get("model_version")==MODEL_VERSION else {}

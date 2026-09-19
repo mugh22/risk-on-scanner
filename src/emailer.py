@@ -19,7 +19,7 @@ def send(subject: str, html: str, text: str) -> bool:
     msg.set_content(text)
     msg.add_alternative(html, subtype="html")
     host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    password = password.replace(" ", "") if host == "smtp.gmail.com" else password
+    password = "".join(password.split()) if host == "smtp.gmail.com" else password
     context = ssl.create_default_context()
     try:
         port = int(os.getenv("SMTP_PORT", "465"))

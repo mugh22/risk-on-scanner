@@ -9,6 +9,8 @@ import yaml
 from dotenv import load_dotenv
 
 from .emailer import send
+from .dominance import safe_snapshot
+from .exit_risk import assess_exit_risk
 from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
 from .reporting import render
@@ -55,19 +57,27 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     btc=analyze("BTC",btc_frame,btc_frame,cfg["weights"]["alt_strength"])
     try: ethbtc=client.daily("ETHBTC",data_cfg["days"])
     except RuntimeError: ethbtc=None
-    coins=[]
+    coins=[]; frames={}
     for symbol in cfg["symbols"]:
-        try: coins.append(analyze(symbol,client.daily(f"{symbol}{quote}",data_cfg["days"]),btc_frame,cfg["weights"]["alt_strength"]))
+        try:
+            frame=client.daily(f"{symbol}{quote}",data_cfg["days"]); frames[symbol]=frame
+            coins.append(analyze(symbol,frame,btc_frame,cfg["weights"]["alt_strength"]))
         except Exception as exc: LOG.error("Skipping %s: %s",symbol,exc)
     if not coins: raise RuntimeError("No altcoin data was successfully analyzed")
     score, context=market_score(btc,ethbtc,coins,cfg["weights"]["risk_on"])
     for coin in coins: coin.signal=classify(coin,score,cfg["signals"])
     previous=load(state_path); signals={c.symbol:c.signal for c in coins}; notes=changes(previous,score,signals)
-    html,text=render(score,previous.get("risk_score"),coins,notes,context)
+    dominance=safe_snapshot(data_cfg.get("timeout_seconds",15))
+    exit_risk=assess_exit_risk(btc_frame,ethbtc,frames,coins,dominance,previous.get("dominance"))
+    history=(previous.get("exit_risk_history") or [])[-19:]+[exit_risk.score]
+    html,text=render(score,previous.get("risk_score"),coins,notes,context,exit_risk,history,dominance)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
-    new_buys=[n for n in notes if n.startswith("NEW BUY")]; subject=(f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}" if new_buys else f"Crypto Risk-On Report | Score {score:.0f} | {regime(score)}")
+    new_buys=[n for n in notes if n.startswith("NEW BUY")]
+    if exit_risk.score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"
+    elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
+    else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
-    save(state_path,{"risk_score":score,"signals":signals}); LOG.info("Analyzed %d assets; %s; BUY=%d WATCH=%d",len(coins),regime(score),sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0
+    save(state_path,{"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"dominance":dominance or previous.get("dominance",{}),"signals":signals}); LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0
 
 
 def main() -> int:
@@ -75,4 +85,3 @@ def main() -> int:
 
 
 if __name__ == "__main__": raise SystemExit(main())
-

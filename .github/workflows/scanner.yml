@@ -5,9 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Runs at 12:00 and 20:00 America/Chicago year-round; UTC cron fires hourly
-    # around each window and the timezone gate below selects the exact local hour.
-    - cron: "0 17,18,1,2 * * *"
+    # Runs just after 12:00 and 20:00 America/Chicago year-round. Avoiding minute
+    # zero reduces GitHub's documented top-of-hour schedule congestion.
+    - cron: "5 17,18,1,2 * * *"
 
 concurrency:
   group: risk-on-scanner

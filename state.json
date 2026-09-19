@@ -4,17 +4,18 @@
   "exit_risk_history": [
     3.5,
     1.5,
+    1.5,
     1.5
   ],
   "dominance": {
-    "btc_d": 58.307,
-    "eth_d": 11.502,
-    "usdt_d": 6.556,
-    "usdc_d": 2.656,
-    "stable_d": 10.987,
-    "concentration": 79.022,
-    "stable_btc_ratio": 0.18844,
-    "alt_ex_stable_btc": 0.3293
+    "btc_d": 58.338,
+    "eth_d": 11.514,
+    "usdt_d": 6.548,
+    "usdc_d": 2.648,
+    "stable_d": 10.969,
+    "concentration": 79.047,
+    "stable_btc_ratio": 0.18802,
+    "alt_ex_stable_btc": 0.3288
   },
   "signals": {
     "ETH": "NO SIGNAL",

@@ -17,6 +17,7 @@ from .reporting import render
 from .scoring import CoinResult, regime, score_coin
 from .signals import classify, levels
 from .state import append_run, changes, load, save
+from .timeframes import timeframe_evidence
 
 LOG = logging.getLogger(__name__)
 
@@ -27,6 +28,9 @@ def analyze(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, weights: dict) 
     _, _, histogram = macd(close)
     btc7, btc30 = period_return(btc.close, 7), period_return(btc.close, 30)
     result = CoinResult(symbol, float(close.iloc[-1]), period_return(close, 1), period_return(close, 7), period_return(close, 30), period_return(close, 7)-btc7, period_return(close, 30)-btc30, float(e20.iloc[-1]), float(e50.iloc[-1]), float(e200.iloc[-1]) if pd.notna(e200.iloc[-1]) else None, float(rsi(close).iloc[-1]), float(histogram.iloc[-1]), float(frame.volume.iloc[-1]/frame.volume.tail(20).mean()), bool(close.iloc[-1] > close.iloc[-21:-1].max()), float(atr(frame).iloc[-1]))
+    evidence=timeframe_evidence(frame,btc)
+    result.weekly_rel=float(evidence["weekly_rel"]); result.weekly_constructive=bool(evidence["weekly_constructive"])
+    result.daily_higher_closes=int(evidence["daily_higher_closes"]); result.daily_rel_confirmations=int(evidence["daily_rel_confirmations"])
     result.score, result.reasons = score_coin(result, weights)
     levels(result, float(frame.high.tail(60).iloc[:-1].max()), float(frame.low.tail(20).min()))
     return result
@@ -42,11 +46,14 @@ def market_score(btc: CoinResult, ethbtc: pd.DataFrame | None, coins: list[CoinR
     breadth50 = 100 * sum(c.price > c.ema50 for c in coins) / max(len(coins), 1)
     breadth7 = 100 * sum(c.rel_7d > 0 for c in coins) / max(len(coins), 1)
     breadth30 = 100 * sum(c.rel_30d > 0 for c in coins) / max(len(coins), 1)
-    breadth = (breadth20+breadth50+breadth7+breadth30)/4
-    momentum = max(0, min(100, 50 + sum(c.rel_30d for c in coins)/max(len(coins),1)*4))
-    parts = {"btc_trend":btc_component,"eth_btc":eth_component,"breadth":breadth,"alt_btc_momentum":momentum}
+    month_regime=(btc_component+eth_component+breadth20+breadth50+breadth30)/5
+    weekly_breadth=100*sum(c.weekly_constructive for c in coins)/max(len(coins),1)
+    weekly_close=(weekly_breadth+eth_component)/2
+    daily_breadth=100*sum(c.daily_rel_confirmations>=2 for c in coins)/max(len(coins),1)
+    last_3_closes=(daily_breadth+100*sum(c.daily_higher_closes>=2 for c in coins)/max(len(coins),1))/2
+    parts = {"month_regime":month_regime,"weekly_close":weekly_close,"last_3_closes":last_3_closes}
     score = sum(parts[k]*weights[k] for k in weights)/sum(weights.values())
-    return round(score,1), {"btc_constructive":btc_component>=75,"eth_btc_positive":eth_component>=75,"breadth_20":breadth20,"breadth_rel30":breadth30}
+    return round(score,1), {"btc_constructive":btc_component>=75,"eth_btc_positive":eth_component>=75,"breadth_20":breadth20,"breadth_rel30":breadth30,"weekly_breadth":weekly_breadth,"daily_confirmation_breadth":daily_breadth,"month_regime":month_regime,"weekly_close":weekly_close,"last_3_closes":last_3_closes}
 
 
 def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None) -> int:

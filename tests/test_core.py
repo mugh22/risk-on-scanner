@@ -57,6 +57,13 @@ def test_volatility_levels():
     assert c.reward_risk > 1
 
 
+def test_execution_levels_can_use_live_price_without_mutating_signal_close():
+    c = coin(price=100, live_price=112); levels(c, 108, 90, c.live_price)
+    assert c.price == 100
+    assert c.entry_low < 112 < c.entry_high
+    assert c.target1 > 112
+
+
 def _frame(start=100, step=1.0, periods=120):
     close = pd.Series([start + step * i for i in range(periods)], dtype=float)
     time = pd.date_range(end=pd.Timestamp.now(tz="UTC").normalize()-pd.Timedelta(days=1), periods=periods, freq="D")

@@ -1,0 +1,39 @@
+{
+  "risk_score": 91.6,
+  "exit_risk": 3.5,
+  "exit_risk_history": [
+    3.5
+  ],
+  "dominance": {
+    "btc_d": 58.304,
+    "eth_d": 11.509,
+    "usdt_d": 6.567,
+    "usdc_d": 2.66,
+    "stable_d": 11.004,
+    "concentration": 79.039,
+    "stable_btc_ratio": 0.18874,
+    "alt_ex_stable_btc": 0.329
+  },
+  "signals": {
+    "ETH": "WATCH",
+    "SOL": "WATCH",
+    "XRP": "NO SIGNAL",
+    "BNB": "NO SIGNAL",
+    "ADA": "BUY",
+    "DOGE": "NO SIGNAL",
+    "AVAX": "WATCH",
+    "LINK": "WATCH",
+    "NEAR": "WATCH",
+    "ARB": "WATCH",
+    "OP": "WATCH",
+    "SUI": "WATCH",
+    "APT": "WATCH",
+    "INJ": "WATCH",
+    "RENDER": "BUY",
+    "TAO": "WATCH",
+    "AAVE": "WATCH",
+    "UNI": "WATCH",
+    "ONDO": "WATCH",
+    "SEI": "WATCH"
+  }
+}

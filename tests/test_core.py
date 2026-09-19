@@ -6,6 +6,8 @@ from src.indicators import ema, period_return, rsi
 from src.exit_risk import assess_exit_risk
 from src.exit_risk import ExitRiskResult
 from src.reporting import render
+from src.portfolio import parse_portfolio_table
+from src.profit_protection import assess_profit_protection
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.scoring import CoinResult, regime, score_coin
 from src.signals import classify, is_overextended, levels
@@ -89,7 +91,7 @@ def test_dominance_rotation_increases_concentration_component():
     assert result.components["Capital concentration"] >= 60
 
 
-def test_buy_is_always_in_opportunity_table_and_chart_is_email_safe():
+def test_buy_is_always_in_opportunity_table_and_bars_are_email_safe():
     coins = [coin(symbol=f"C{i}", price=100+i) for i in range(11)]
     for i, item in enumerate(coins):
         item.score = 99-i
@@ -99,9 +101,35 @@ def test_buy_is_always_in_opportunity_table_and_chart_is_email_safe():
     risk = ExitRiskResult(22, "LOW", "HOLD", "Healthy", {"Relative strength": 20})
     context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
     html, _ = render(80, 79, coins, [], context, risk, [20, 22])
-    table = html.split("<h2>Top opportunities</h2>", 1)[1].split("</table>", 1)[0]
+    table = html.split("<h2>Market opportunities</h2>", 1)[1].split("</table>", 1)[0]
     assert "C10" in table and "BUY" in table
-    assert "█" in html and "▂" in html
+    assert "bar-track" in html and "background:#e2e8f0" in html
+    assert html.index("Your portfolio — actions first") < html.index("Market evidence")
+
+
+def test_zero_component_still_has_visible_bar_track():
+    coins = [coin()]; coins[0].score = 80; coins[0].signal = "WATCH"; levels(coins[0], 130, 105)
+    risk = ExitRiskResult(0, "LOW", "HOLD", "Healthy", {"Relative strength": 0})
+    context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
+    html, _ = render(80, 79, coins, [], context, risk, [0, 0])
+    assert "width:100%;background:#e2e8f0" in html
+
+
+def test_portfolio_issue_table_parser():
+    body = """| Symbol | Quantity | Average Cost | Target % | Enabled |
+|---|---:|---:|---:|---|
+| BTC | 0.5 | $40,000 | 50% | Yes |
+| ARB | 1000 | 0.50 | 10 | No |
+| SOL | 4 | 100 | 20 | Yes |"""
+    holdings = parse_portfolio_table(body)
+    assert [h.symbol for h in holdings] == ["BTC", "SOL"]
+    assert holdings[0].average_cost == 40000
+
+
+def test_profit_protection_separates_hot_rally_from_exit_risk():
+    result = assess_profit_protection(coin(rsi=82, usd_30d=90, price=145, ema20=110, breakout=False), 5)
+    assert result.score >= 60
+    assert "TRIM" in result.action
 
 
 def test_open_daily_and_current_week_are_excluded():

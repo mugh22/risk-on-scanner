@@ -6,6 +6,8 @@ import time
 import httpx
 import pandas as pd
 
+from .timeframes import completed_daily
+
 LOG = logging.getLogger(__name__)
 BASES = (
     "https://data-api.binance.vision",
@@ -37,7 +39,10 @@ class BinanceClient:
                         frame[col] = pd.to_numeric(frame[col])
                     frame["time"] = pd.to_datetime(frame["time"], unit="ms", utc=True)
                     LOG.info("Loaded %s from %s", pair, base)
-                    return frame[["time", "open", "high", "low", "close", "volume"]]
+                    frame = completed_daily(frame[["time", "open", "high", "low", "close", "volume"]])
+                    if frame.empty:
+                        raise ValueError(f"No completed candles for {pair}")
+                    return frame
                 except (httpx.HTTPError, ValueError) as exc:
                     error = exc
                     LOG.warning("Data attempt %s/%s failed for %s via %s: %s", attempt + 1, self.retries, pair, base, exc)

@@ -1,0 +1,32 @@
+symbols: [ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, INJ, RENDER, TAO, AAVE, UNI, ONDO, SEI]
+benchmark: BTC
+data:
+  quote: USDT
+  days: 240
+  timeout_seconds: 20
+  retries: 3
+weights:
+  alt_strength:
+    relative_30d: 30
+    relative_7d: 15
+    trend: 25
+    momentum: 15
+    volume: 8
+    breakout: 7
+  risk_on:
+    btc_trend: 25
+    eth_btc: 25
+    breadth: 35
+    alt_btc_momentum: 15
+signals:
+  min_buy_score: 72
+  min_watch_score: 58
+  min_risk_on_score: 55
+  min_volume_ratio: 0.9
+  max_rsi_buy: 74
+  max_distance_ema20_pct: 12
+  max_daily_move_pct: 15
+email:
+  enabled: true
+  subject_prefix: Crypto Risk-On
+

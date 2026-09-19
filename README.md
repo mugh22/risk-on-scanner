@@ -48,7 +48,7 @@ In **Settings → Secrets and variables → Actions**, create exactly these repo
 
 For Gmail, enable 2-Step Verification and create an App Password. Secret values are never logged. The defaults use `smtp.gmail.com:465`; local runs can override `SMTP_HOST` and `SMTP_PORT`.
 
-The workflow can be launched from **Actions → Crypto risk-on scanner → Run workflow**. Scheduled runs occur at 12:00 PM and 8:00 PM `America/Chicago`. GitHub schedules are UTC-only, so four UTC trigger hours plus an in-job timezone gate handle CST/CDT correctly. The two nonmatching UTC invocations exit without scanning.
+The workflow can be launched from **Actions → Crypto risk-on scanner → Run workflow**. A manual run sends the full email report. Scheduled runs occur at 12:00 PM and 8:00 PM `America/Chicago`. GitHub schedules are UTC-only, so four UTC trigger hours plus an in-job timezone gate handle CST/CDT correctly. The two nonmatching UTC invocations exit without scanning.
 
 ## Customization
 

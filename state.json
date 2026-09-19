@@ -1,13 +1,14 @@
 {
   "model_version": "closed-candle-v1",
   "risk_score": 68.8,
-  "exit_risk": 2.5,
+  "exit_risk": 1.5,
   "exit_risk_history": [
     3.5,
     1.5,
     1.5,
     1.5,
-    2.5
+    2.5,
+    1.5
   ],
   "dominance": {
     "btc_d": 58.37,

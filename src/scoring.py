@@ -33,6 +33,10 @@ class CoinResult:
     volume_ratio: float
     breakout: bool
     atr: float
+    weekly_rel: float = 0
+    weekly_constructive: bool = False
+    daily_higher_closes: int = 0
+    daily_rel_confirmations: int = 0
     score: float = 0
     signal: str = "NO SIGNAL"
     reasons: list[str] = field(default_factory=list)
@@ -59,4 +63,3 @@ def score_coin(c: CoinResult, weights: dict[str, float]) -> tuple[float, list[st
     reasons.append(("+" if c.macd_hist > 0 else "-") + " positive MACD" if c.macd_hist > 0 else "- negative MACD")
     reasons.append(("+" if c.volume_ratio >= 1 else "-") + f" volume {c.volume_ratio:.1f}x average")
     return round(score, 1), reasons
-

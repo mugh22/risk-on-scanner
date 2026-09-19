@@ -6,6 +6,7 @@ import pandas as pd
 
 from .indicators import ema, period_return, rsi
 from .scoring import CoinResult, clamp
+from .timeframes import completed_weekly_closes
 
 
 @dataclass
@@ -102,7 +103,7 @@ def assess_exit_risk(
         prior_high = float(close.iloc[-90:-21].max()) if len(close) >= 90 else current_high
         if rsi(close).iloc[-1] >= 68 and current_high < prior_high * 0.99:
             failed_highs += 1
-        weekly = close.groupby(pd.RangeIndex(len(close)) // 7).last()
+        weekly = completed_weekly_closes(frame)
         if len(weekly) >= 3 and weekly.iloc[-1] < weekly.iloc[-2] < weekly.iloc[-3]:
             weekly_red += 1
     n = max(len(coins), 1)

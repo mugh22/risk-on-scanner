@@ -5,13 +5,14 @@ A selective, transparent Python 3.12 scanner that measures crypto risk appetite,
 ## What it does
 
 - Downloads daily OHLCV candles from Binance's public API; no market-data key is required.
-- Produces a 0–100 market Risk-On Score from BTC trend, ETH/BTC trend, breadth, and aggregate alt/BTC momentum.
+- Produces a 0–100 market Risk-On Score from a 30-day regime (45%), latest completed weekly close (35%), and last three completed daily closes (20%).
 - Produces a separate 0–100 Alt Exit Risk Score and a direct `HOLD`, `CAUTION`, `REDUCE`, or `EXIT MOST ALT RISK` call.
 - Detects deterioration using median alt/BTC relative strength, participation breadth and its 7-day change, failed highs/exhaustion, BTC trend stress, and capital concentration.
 - Adds Gmail-safe component bars, a rolling 20-scan exit-risk sparkline, and an optional BTC/ETH/stablecoin dominance snapshot to the same email.
 - Produces a 0–100 Alt Strength Score from 7D/30D BTC-relative returns, trend, momentum, volume, and breakout confirmation.
 - Classifies each asset as `BUY`, `WATCH`, or `NO SIGNAL`. A BUY requires a risk-on regime and at least six independent confirmations.
 - Suppresses BUY signals when RSI, distance above EMA20, or the daily move indicates chasing.
+- Excludes the still-forming UTC daily candle. A BUY additionally requires positive 30-day BTC-relative strength, a constructive completed weekly structure, and outperformance in at least two of the last three completed daily closes.
 - Calculates ATR/market-structure-aware entry, targets, invalidation, and reward/risk levels.
 - Persists scanner state plus an append-only run ledger on the dedicated `scanner-data` branch and highlights regime/signal changes without cluttering `main`.
 
@@ -19,7 +20,7 @@ The initial universe is configured in [`config.yaml`](config.yaml): ETH, SOL, XR
 
 ## Scores and regimes
 
-Risk-On component weights: BTC trend 25%, ETH/BTC 25%, breadth 35%, aggregate alt/BTC momentum 15%. Regimes are: 0–34 Risk-Off, 35–54 Neutral, 55–69 Early Risk-On, 70–84 Risk-On, and 85–100 Strong Risk-On.
+Risk-On evidence-window weights: 30-day regime 45%, latest completed weekly close 35%, and last three completed daily closes 20%. Regimes are: 0–34 Risk-Off, 35–54 Neutral, 55–69 Early Risk-On, 70–84 Risk-On, and 85–100 Strong Risk-On.
 
 Alt Strength defaults: 30D vs BTC 30%, 7D vs BTC 15%, trend 25%, momentum 15%, volume 8%, breakout 7%. All weights and thresholds are centralized in `config.yaml`.
 

@@ -14,10 +14,9 @@ weights:
     volume: 8
     breakout: 7
   risk_on:
-    btc_trend: 25
-    eth_btc: 25
-    breadth: 35
-    alt_btc_momentum: 15
+    month_regime: 45
+    weekly_close: 35
+    last_3_closes: 20
 signals:
   min_buy_score: 72
   min_watch_score: 58

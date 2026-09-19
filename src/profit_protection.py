@@ -24,7 +24,8 @@ def assess_profit_protection(coin: CoinResult, exit_risk_score: float) -> Profit
     """Measure rally heat separately from broad exit risk."""
     score = 0.0
     reasons: list[str] = []
-    distance = (coin.price / coin.ema20 - 1) * 100 if coin.ema20 else 0.0
+    current_price = coin.live_price or coin.price
+    distance = (current_price / coin.ema20 - 1) * 100 if coin.ema20 else 0.0
 
     if coin.rsi >= 80:
         score += 30; reasons.append(f"RSI is extremely stretched at {coin.rsi:.0f}")
@@ -47,9 +48,9 @@ def assess_profit_protection(coin: CoinResult, exit_risk_score: float) -> Profit
     elif coin.usd_30d >= 20:
         score += 6
 
-    if coin.target1 and coin.price >= coin.target1:
+    if coin.target1 and current_price >= coin.target1:
         score += 20; reasons.append("Price reached the first modeled target")
-    elif coin.target1 and coin.price >= coin.target1 * .95:
+    elif coin.target1 and current_price >= coin.target1 * .95:
         score += 12; reasons.append("Price is within 5% of the first target")
 
     if coin.rsi >= 70 and not coin.breakout:

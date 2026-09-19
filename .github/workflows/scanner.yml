@@ -49,7 +49,7 @@ jobs:
           restore-keys: scanner-state-
       - name: Test
         if: steps.gate.outputs.run == 'true'
-        run: pytest -q
+        run: python -m pytest -q
       - name: Scan and email
         if: steps.gate.outputs.run == 'true'
         env:
@@ -58,7 +58,7 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         run: python -m src.scanner ${{ github.event_name == 'push' && '--no-email' || '' }}
       - name: Save scanner state
-        if: steps.gate.outputs.run == 'true' && always()
+        if: steps.gate.outputs.run == 'true' && success()
         uses: actions/cache/save@v4
         with:
           path: state.json

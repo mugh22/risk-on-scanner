@@ -15,6 +15,7 @@ A selective, transparent Python 3.12 scanner that measures crypto risk appetite,
 - Classifies each asset as `BUY`, `WATCH`, or `NO SIGNAL`. A BUY requires a risk-on regime and at least six independent confirmations.
 - Suppresses BUY signals when RSI, distance above EMA20, or the daily move indicates chasing.
 - Excludes the still-forming UTC daily candle. A BUY additionally requires positive 30-day BTC-relative strength, a constructive completed weekly structure, and outperformance in at least two of the last three completed daily closes.
+- Fetches uncached live spot quotes immediately before rendering each report. Live prices drive portfolio value and P/L; completed daily closes remain separately labeled and continue to drive noise-resistant signals.
 - Calculates ATR/market-structure-aware entry, targets, invalidation, and reward/risk levels.
 - Persists scanner state plus an append-only run ledger on the dedicated `scanner-data` branch and highlights regime/signal changes without cluttering `main`.
 

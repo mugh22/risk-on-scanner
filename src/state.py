@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -15,6 +16,16 @@ def save(path: str, data: dict) -> None:
     Path(path).write_text(json.dumps(data, indent=2))
 
 
+def append_run(path: str | None, data: dict) -> None:
+    if not path:
+        return
+    file = Path(path)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    record = {"timestamp": datetime.now(timezone.utc).isoformat(), **data}
+    with file.open("a") as handle:
+        handle.write(json.dumps(record, separators=(",", ":")) + "\n")
+
+
 def changes(previous: dict, score: float, signals: dict[str, str]) -> list[str]:
     notes = []
     if "risk_score" in previous: notes.append(f"Risk-On Score {previous['risk_score']:.0f} → {score:.0f} ({score-previous['risk_score']:+.0f})")
@@ -23,4 +34,3 @@ def changes(previous: dict, score: float, signals: dict[str, str]) -> list[str]:
         if signal == "BUY" and old.get(symbol) != "BUY": notes.append(f"NEW BUY SIGNAL: {symbol}")
         elif old.get(symbol) and old[symbol] != signal: notes.append(f"{symbol}: {old[symbol]} → {signal}")
     return notes
-

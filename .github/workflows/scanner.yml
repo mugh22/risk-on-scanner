@@ -56,7 +56,13 @@ jobs:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        run: python -m src.scanner ${{ github.event_name == 'push' && '--no-email' || '' }}
+        shell: bash
+        run: |
+          args=()
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.event.head_commit.message }}" != *"[email-test]"* ]]; then
+            args+=(--no-email)
+          fi
+          python -m src.scanner "${args[@]}"
       - name: Save scanner state
         if: steps.gate.outputs.run == 'true' && success()
         uses: actions/cache/save@v4

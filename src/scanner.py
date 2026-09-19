@@ -13,6 +13,8 @@ from .dominance import safe_snapshot
 from .exit_risk import assess_exit_risk
 from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
+from .portfolio import load_portfolio
+from .profit_protection import assess_profit_protection, heat_call
 from .reporting import render
 from .scoring import CoinResult, regime, score_coin
 from .signals import classify, levels
@@ -20,6 +22,7 @@ from .state import append_run, changes, load, save
 from .timeframes import timeframe_evidence
 
 LOG = logging.getLogger(__name__)
+MODEL_VERSION = "closed-candle-v1"
 
 
 def analyze(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, weights: dict) -> CoinResult:
@@ -58,6 +61,7 @@ def market_score(btc: CoinResult, ethbtc: pd.DataFrame | None, coins: list[CoinR
 
 def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None) -> int:
     cfg = yaml.safe_load(Path(config_path).read_text()); data_cfg=cfg["data"]
+    holdings, portfolio_note = load_portfolio()
     client = BinanceClient(data_cfg["timeout_seconds"], data_cfg["retries"]); quote=data_cfg["quote"]
     LOG.info("Scan started using Binance public daily candles")
     btc_frame=client.daily(f"BTC{quote}", data_cfg["days"])
@@ -65,7 +69,9 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     try: ethbtc=client.daily("ETHBTC",data_cfg["days"])
     except RuntimeError: ethbtc=None
     coins=[]; frames={}
-    for symbol in cfg["symbols"]:
+    portfolio_symbols = [h.symbol for h in holdings if h.symbol not in {"BTC", "USDT", "USDC", "USD"}]
+    symbols = list(dict.fromkeys([*cfg["symbols"], *portfolio_symbols]))
+    for symbol in symbols:
         try:
             frame=client.daily(f"{symbol}{quote}",data_cfg["days"]); frames[symbol]=frame
             coins.append(analyze(symbol,frame,btc_frame,cfg["weights"]["alt_strength"]))
@@ -73,18 +79,39 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     if not coins: raise RuntimeError("No altcoin data was successfully analyzed")
     score, context=market_score(btc,ethbtc,coins,cfg["weights"]["risk_on"])
     for coin in coins: coin.signal=classify(coin,score,cfg["signals"])
-    previous=load(state_path); signals={c.symbol:c.signal for c in coins}; notes=changes(previous,score,signals)
+    previous=load(state_path); comparable=previous if previous.get("model_version")==MODEL_VERSION else {}
+    signals={c.symbol:c.signal for c in coins}; notes=changes(comparable,score,signals)
     dominance=safe_snapshot(data_cfg.get("timeout_seconds",15))
     exit_risk=assess_exit_risk(btc_frame,ethbtc,frames,coins,dominance,previous.get("dominance"))
     history=(previous.get("exit_risk_history") or [])[-19:]+[exit_risk.score]
-    html,text=render(score,previous.get("risk_score"),coins,notes,context,exit_risk,history,dominance)
+    by_symbol = {"BTC": btc, **{coin.symbol: coin for coin in coins}}
+    protections = {symbol: assess_profit_protection(coin, exit_risk.score) for symbol, coin in by_symbol.items()}
+    heat_values = [item.score for item in protections.values()]
+    market_heat_score = round(float(pd.Series(heat_values).quantile(.75)), 1) if heat_values else 0.0
+    market_heat_level, market_heat_action = heat_call(market_heat_score)
+    market_heat = {"score": market_heat_score, "level": market_heat_level, "action": market_heat_action}
+    raw_rows = []
+    for holding in holdings:
+        coin = by_symbol.get(holding.symbol)
+        if holding.symbol in {"USDT", "USDC", "USD"}:
+            raw_rows.append({"holding": holding, "price": 1.0, "signal": "CASH", "heat": 0.0, "action": "HOLD AS RESERVE"})
+        elif coin:
+            protection = protections[holding.symbol]
+            raw_rows.append({"holding": holding, "price": coin.price, "signal": coin.signal, "heat": protection.score, "action": protection.action})
+    total_value = sum(row["holding"].quantity * row["price"] for row in raw_rows)
+    portfolio_rows = []
+    for row in raw_rows:
+        holding = row.pop("holding"); value = holding.quantity * row["price"]
+        pnl = "N/A" if holding.average_cost is None else f"{(row['price']/holding.average_cost-1)*100:+.1f}%"
+        portfolio_rows.append({**row, "symbol": holding.symbol, "quantity": holding.quantity, "value": value, "allocation": 100*value/max(total_value, .000001), "pnl": pnl})
+    html,text=render(score,comparable.get("risk_score"),coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
     if exit_risk.score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"
     elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
     else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
-    state={"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"dominance":dominance or previous.get("dominance",{}),"signals":signals}
+    state={"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"dominance":dominance or previous.get("dominance",{}),"signals":signals}
     save(state_path,state)
     append_run(history_path,{**state,"regime":regime(score),"buy_count":sum(c.signal=="BUY" for c in coins),"watch_count":sum(c.signal=="WATCH" for c in coins)})
     LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0

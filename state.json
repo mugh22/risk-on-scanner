@@ -8,16 +8,17 @@
     1.5,
     1.5,
     2.5,
+    1.5,
     1.5
   ],
   "dominance": {
-    "btc_d": 58.37,
-    "eth_d": 11.488,
-    "usdt_d": 6.606,
-    "usdc_d": 2.669,
-    "stable_d": 11.064,
-    "concentration": 79.133,
-    "stable_btc_ratio": 0.18956,
+    "btc_d": 58.383,
+    "eth_d": 11.491,
+    "usdt_d": 6.595,
+    "usdc_d": 2.665,
+    "stable_d": 11.047,
+    "concentration": 79.134,
+    "stable_btc_ratio": 0.18922,
     "alt_ex_stable_btc": 0.3268
   },
   "signals": {

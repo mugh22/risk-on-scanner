@@ -4,6 +4,8 @@ import pytest
 
 from src.indicators import ema, period_return, rsi
 from src.exit_risk import assess_exit_risk
+from src.exit_risk import ExitRiskResult
+from src.reporting import render
 from src.scoring import CoinResult, regime, score_coin
 from src.signals import classify, is_overextended, levels
 
@@ -83,3 +85,18 @@ def test_dominance_rotation_increases_concentration_component():
     previous = {"concentration": 80.5, "stable_btc_ratio": .18}
     result = assess_exit_risk(btc, None, frames, coins, current, previous)
     assert result.components["Capital concentration"] >= 60
+
+
+def test_buy_is_always_in_opportunity_table_and_chart_is_email_safe():
+    coins = [coin(symbol=f"C{i}", price=100+i) for i in range(11)]
+    for i, item in enumerate(coins):
+        item.score = 99-i
+        item.signal = "WATCH"
+        levels(item, item.price+10, item.price-10)
+    coins[-1].signal = "BUY"
+    risk = ExitRiskResult(22, "LOW", "HOLD", "Healthy", {"Relative strength": 20})
+    context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70}
+    html, _ = render(80, 79, coins, [], context, risk, [20, 22])
+    table = html.split("<h2>Top opportunities</h2>", 1)[1].split("</table>", 1)[0]
+    assert "C10" in table and "BUY" in table
+    assert "█" in html and "▂" in html

@@ -8,12 +8,12 @@ A selective, transparent Python 3.12 scanner that measures crypto risk appetite,
 - Produces a 0–100 market Risk-On Score from BTC trend, ETH/BTC trend, breadth, and aggregate alt/BTC momentum.
 - Produces a separate 0–100 Alt Exit Risk Score and a direct `HOLD`, `CAUTION`, `REDUCE`, or `EXIT MOST ALT RISK` call.
 - Detects deterioration using median alt/BTC relative strength, participation breadth and its 7-day change, failed highs/exhaustion, BTC trend stress, and capital concentration.
-- Adds a mobile-readable component chart, a rolling 20-scan exit-risk chart, and an optional BTC/ETH/stablecoin dominance snapshot to the same email.
+- Adds Gmail-safe component bars, a rolling 20-scan exit-risk sparkline, and an optional BTC/ETH/stablecoin dominance snapshot to the same email.
 - Produces a 0–100 Alt Strength Score from 7D/30D BTC-relative returns, trend, momentum, volume, and breakout confirmation.
 - Classifies each asset as `BUY`, `WATCH`, or `NO SIGNAL`. A BUY requires a risk-on regime and at least six independent confirmations.
 - Suppresses BUY signals when RSI, distance above EMA20, or the daily move indicates chasing.
 - Calculates ATR/market-structure-aware entry, targets, invalidation, and reward/risk levels.
-- Restores lightweight state with GitHub Actions cache and highlights regime/signal changes without automated commits.
+- Persists scanner state plus an append-only run ledger on the dedicated `scanner-data` branch and highlights regime/signal changes without cluttering `main`.
 
 The initial universe is configured in [`config.yaml`](config.yaml): ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, INJ, RENDER, TAO, AAVE, UNI, ONDO, and SEI. Unsupported Binance pairs are logged and skipped without aborting the report.
 
@@ -48,7 +48,7 @@ In **Settings → Secrets and variables → Actions**, create exactly these repo
 
 For Gmail, enable 2-Step Verification and create an App Password. Secret values are never logged. The defaults use `smtp.gmail.com:465`; local runs can override `SMTP_HOST` and `SMTP_PORT`.
 
-The workflow can be launched from **Actions → Crypto risk-on scanner → Run workflow**. A manual run sends the full email report. Scheduled runs occur at 12:00 PM and 8:00 PM `America/Chicago`. GitHub schedules are UTC-only, so four UTC trigger hours plus an in-job timezone gate handle CST/CDT correctly. The two nonmatching UTC invocations exit without scanning.
+The workflow can be launched from **Actions → Crypto risk-on scanner → Run workflow**. Scheduled runs occur at 12:00 PM and 8:00 PM `America/Chicago`. GitHub schedules are UTC-only, so four UTC trigger hours plus an in-job timezone gate handle CST/CDT correctly. The two nonmatching UTC invocations exit without scanning.
 
 ## Customization
 
@@ -61,4 +61,4 @@ Example headline: `RISK-ON SCORE: 74/100 — RISK-ON`. Ranked rows include price
 
 ## Limitations
 
-Daily candles can miss intraday changes. Exchange availability and symbol mapping vary. The first run has no comparison history. GitHub cache eviction may also reset history. Market-cap dominance is obtained from CoinGecko as optional context and accumulated in scanner state over time; if that source is unavailable, the core Binance-based scan and email still complete. The decision model uses confirmation across independent signal families and does not treat fixed dominance levels as permanent truths. Signals are systematic technical research, not financial advice or guaranteed outcomes.
+Daily candles can miss intraday changes. Exchange availability and symbol mapping vary. The first persisted run has limited comparison history. Market-cap dominance is obtained from CoinGecko as optional context and accumulated in scanner state over time; if that source is unavailable, the core Binance-based scan and email still complete. The decision model uses confirmation across independent signal families and does not treat fixed dominance levels as permanent truths. Signals are systematic technical research, not financial advice or guaranteed outcomes.

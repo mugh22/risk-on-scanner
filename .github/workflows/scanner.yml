@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   scan:
@@ -40,13 +40,20 @@ jobs:
       - name: Install dependencies
         if: steps.gate.outputs.run == 'true'
         run: pip install -r requirements.txt
-      - name: Restore scanner state
+      - name: Checkout persistent scanner data
         if: steps.gate.outputs.run == 'true'
-        uses: actions/cache/restore@v4
+        uses: actions/checkout@v4
         with:
-          path: state.json
-          key: scanner-state-${{ github.run_id }}
-          restore-keys: scanner-state-
+          ref: scanner-data
+          path: .scanner-data
+          fetch-depth: 1
+      - name: Restore persistent scanner state
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          if [[ -f .scanner-data/state.json ]]; then
+            cp .scanner-data/state.json state.json
+          fi
       - name: Test
         if: steps.gate.outputs.run == 'true'
         run: python -m pytest -q
@@ -58,17 +65,23 @@ jobs:
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         shell: bash
         run: |
-          args=()
+          args=(--history .scanner-data/history/runs.jsonl)
           if [[ "${{ github.event_name }}" == "push" && "${{ github.event.head_commit.message }}" != *"[email-test]"* ]]; then
             args+=(--no-email)
           fi
           python -m src.scanner "${args[@]}"
-      - name: Save scanner state
+      - name: Publish persistent scanner state and history
         if: steps.gate.outputs.run == 'true' && success()
-        uses: actions/cache/save@v4
-        with:
-          path: state.json
-          key: scanner-state-${{ github.run_id }}
+        shell: bash
+        run: |
+          cp state.json .scanner-data/state.json
+          git -C .scanner-data config user.name "risk-on-scanner[bot]"
+          git -C .scanner-data config user.email "risk-on-scanner[bot]@users.noreply.github.com"
+          git -C .scanner-data add -f state.json history/runs.jsonl
+          if ! git -C .scanner-data diff --cached --quiet; then
+            git -C .scanner-data commit -m "Record scanner run ${{ github.run_id }}"
+            git -C .scanner-data push origin scanner-data
+          fi
       - name: Upload report
         if: steps.gate.outputs.run == 'true' && always()
         uses: actions/upload-artifact@v4

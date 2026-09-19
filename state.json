@@ -1,21 +1,23 @@
 {
-  "risk_score": 67.8,
-  "exit_risk": 1.5,
+  "model_version": "closed-candle-v1",
+  "risk_score": 68.8,
+  "exit_risk": 2.5,
   "exit_risk_history": [
     3.5,
     1.5,
     1.5,
-    1.5
+    1.5,
+    2.5
   ],
   "dominance": {
-    "btc_d": 58.338,
-    "eth_d": 11.514,
-    "usdt_d": 6.548,
-    "usdc_d": 2.648,
-    "stable_d": 10.969,
-    "concentration": 79.047,
-    "stable_btc_ratio": 0.18802,
-    "alt_ex_stable_btc": 0.3288
+    "btc_d": 58.37,
+    "eth_d": 11.488,
+    "usdt_d": 6.606,
+    "usdc_d": 2.669,
+    "stable_d": 11.064,
+    "concentration": 79.133,
+    "stable_btc_ratio": 0.18956,
+    "alt_ex_stable_btc": 0.3268
   },
   "signals": {
     "ETH": "NO SIGNAL",
@@ -37,6 +39,7 @@
     "AAVE": "WATCH",
     "UNI": "WATCH",
     "ONDO": "NO SIGNAL",
-    "SEI": "NO SIGNAL"
+    "SEI": "NO SIGNAL",
+    "AERO": "WATCH"
   }
 }

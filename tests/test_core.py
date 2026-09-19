@@ -6,12 +6,13 @@ from src.indicators import ema, period_return, rsi
 from src.exit_risk import assess_exit_risk
 from src.exit_risk import ExitRiskResult
 from src.reporting import render
+from src.timeframes import completed_daily, completed_weekly_closes
 from src.scoring import CoinResult, regime, score_coin
 from src.signals import classify, is_overextended, levels
 
 
 def coin(**overrides):
-    values = dict(symbol="SOL", price=120, usd_1d=2, usd_7d=8, usd_30d=25, rel_7d=5, rel_30d=15, ema20=110, ema50=100, ema200=80, rsi=62, macd_hist=1.2, volume_ratio=1.5, breakout=True, atr=5)
+    values = dict(symbol="SOL", price=120, usd_1d=2, usd_7d=8, usd_30d=25, rel_7d=5, rel_30d=15, ema20=110, ema50=100, ema200=80, rsi=62, macd_hist=1.2, volume_ratio=1.5, breakout=True, atr=5, weekly_rel=4, weekly_constructive=True, daily_higher_closes=3, daily_rel_confirmations=3)
     values.update(overrides)
     return CoinResult(**values)
 
@@ -56,7 +57,8 @@ def test_volatility_levels():
 
 def _frame(start=100, step=1.0, periods=120):
     close = pd.Series([start + step * i for i in range(periods)], dtype=float)
-    return pd.DataFrame({"close": close, "high": close + 2, "low": close - 2, "open": close - 1, "volume": 1000.0})
+    time = pd.date_range(end=pd.Timestamp.now(tz="UTC").normalize()-pd.Timedelta(days=1), periods=periods, freq="D")
+    return pd.DataFrame({"time": time, "close": close, "high": close + 2, "low": close - 2, "open": close - 1, "volume": 1000.0})
 
 
 def test_exit_risk_constructive_market_is_not_exit():
@@ -95,8 +97,18 @@ def test_buy_is_always_in_opportunity_table_and_chart_is_email_safe():
         levels(item, item.price+10, item.price-10)
     coins[-1].signal = "BUY"
     risk = ExitRiskResult(22, "LOW", "HOLD", "Healthy", {"Relative strength": 20})
-    context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70}
+    context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
     html, _ = render(80, 79, coins, [], context, risk, [20, 22])
     table = html.split("<h2>Top opportunities</h2>", 1)[1].split("</table>", 1)[0]
     assert "C10" in table and "BUY" in table
     assert "█" in html and "▂" in html
+
+
+def test_open_daily_and_current_week_are_excluded():
+    now = pd.Timestamp("2026-09-19T12:00:00Z")
+    time = pd.date_range("2026-09-01", "2026-09-19", freq="D", tz="UTC")
+    frame = pd.DataFrame({"time": time, "close": range(len(time))})
+    daily = completed_daily(frame, now.to_pydatetime())
+    weekly = completed_weekly_closes(daily, now.to_pydatetime())
+    assert daily.time.max() == pd.Timestamp("2026-09-18T00:00:00Z")
+    assert weekly.index.max() == pd.Timestamp("2026-09-07T00:00:00Z")

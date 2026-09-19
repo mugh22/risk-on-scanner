@@ -16,6 +16,7 @@ class ExitRiskResult:
     call: str
     summary: str
     components: dict[str, float]
+    directions: dict[str, str] = field(default_factory=dict)
     red_flags: list[str] = field(default_factory=list)
     supports: list[str] = field(default_factory=list)
     metrics: dict[str, float] = field(default_factory=dict)
@@ -49,10 +50,12 @@ def assess_exit_risk(
     coins: list[CoinResult],
     dominance: dict | None = None,
     previous_dominance: dict | None = None,
+    previous_metrics: dict[str, float] | None = None,
 ) -> ExitRiskResult:
     """Explainable, multi-confirmation warning model; higher means more alt downside risk."""
     dominance = dominance or {}
     previous_dominance = previous_dominance or {}
+    previous_metrics = previous_metrics or {}
     flags: list[str] = []
     supports: list[str] = []
 
@@ -184,5 +187,38 @@ def assess_exit_risk(
         "breadth_change7": round(breadth_change, 1), "ethbtc_7d": round(eth_rel7, 2),
         "btc_7d": round(btc7, 2), "btc_drawdown30": round(btc_drawdown, 2),
         "extended_pct": round(extended_pct, 1), "failed_high_pct": round(failed_pct, 1),
+        "weekly_red_pct": round(weekly_red_pct, 1),
+        "concentration": round(float(dominance.get("concentration", 0)), 2),
+        "stable_btc_ratio": round(float(dominance.get("stable_btc_ratio", 0)), 4),
     }
-    return ExitRiskResult(score, level, call, summary, components, flags[:4], supports[:3], metrics)
+
+    # Direction is deliberately separate from the confirmed component score. It can
+    # warn that healthy evidence is weakening before a strict risk threshold is crossed.
+    def movement(name: str, pairs: list[tuple[str, int, float]]) -> str:
+        if not previous_metrics:
+            return "Baseline"
+        changes = []
+        for key, risk_sign, tolerance in pairs:
+            if key not in previous_metrics:
+                continue
+            delta = (metrics[key] - float(previous_metrics[key])) * risk_sign
+            if abs(delta) >= tolerance:
+                changes.append(delta)
+        if not changes:
+            return "Stable"
+        net = sum(changes)
+        return "Worsening" if net > 0 else "Improving" if net < 0 else "Mixed"
+
+    movements = {
+        "Relative strength": movement("Relative strength", [("median_rel7", -1, 1.5), ("median_rel30", -1, 2.0), ("rel_breadth7", -1, 5), ("rel_breadth30", -1, 5), ("ethbtc_7d", -1, 1)]),
+        "Breadth deterioration": movement("Breadth deterioration", [("breadth20", -1, 5), ("breadth50", -1, 5), ("breadth_change7", -1, 5)]),
+        "Exhaustion / distribution": movement("Exhaustion / distribution", [("extended_pct", 1, 5), ("failed_high_pct", 1, 5), ("weekly_red_pct", 1, 5)]),
+        "BTC trend stress": movement("BTC trend stress", [("btc_7d", -1, 1.5), ("btc_drawdown30", -1, 2)]),
+        "Capital concentration": movement("Capital concentration", [("concentration", 1, .25), ("stable_btc_ratio", 1, .001)]),
+    }
+    directions = {}
+    for name, component_score in components.items():
+        move = movements[name]
+        condition = "Healthy" if component_score < 25 else "Watch" if component_score < 50 else "Elevated"
+        directions[name] = f"{condition} · {move.lower()}" if move in {"Baseline", "Stable", "Worsening"} else move
+    return ExitRiskResult(score, level, call, summary, components, directions, flags[:4], supports[:3], metrics)

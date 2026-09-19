@@ -105,7 +105,7 @@ def test_buy_is_always_in_opportunity_table_and_bars_are_email_safe():
         item.signal = "WATCH"
         levels(item, item.price+10, item.price-10)
     coins[-1].signal = "BUY"
-    risk = ExitRiskResult(22, "LOW", "HOLD", "Healthy", {"Relative strength": 20})
+    risk = ExitRiskResult(22, "LOW", "HOLD", "Healthy", {"Relative strength": 20}, {"Relative strength": "Healthy · stable"})
     context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
     html, _ = render(80, 79, coins, [], context, risk, [20, 22])
     table = html.split("<h2>Market opportunities</h2>", 1)[1].split("</table>", 1)[0]
@@ -117,7 +117,7 @@ def test_buy_is_always_in_opportunity_table_and_bars_are_email_safe():
 
 def test_report_prefers_live_price_but_keeps_signal_close():
     item = coin(price=100, live_price=107); item.score = 80; item.signal = "WATCH"; levels(item, 110, 90)
-    risk = ExitRiskResult(10, "LOW", "HOLD", "Healthy", {"Relative strength": 0})
+    risk = ExitRiskResult(10, "LOW", "HOLD", "Healthy", {"Relative strength": 0}, {"Relative strength": "Healthy · stable"})
     context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
     html, _ = render(70, 70, [item], [], context, risk, [10, 10])
     assert "$107.0000" in html and "$100.0000" in html
@@ -125,10 +125,23 @@ def test_report_prefers_live_price_but_keeps_signal_close():
 
 def test_zero_component_still_has_visible_bar_track():
     coins = [coin()]; coins[0].score = 80; coins[0].signal = "WATCH"; levels(coins[0], 130, 105)
-    risk = ExitRiskResult(0, "LOW", "HOLD", "Healthy", {"Relative strength": 0})
+    risk = ExitRiskResult(0, "LOW", "HOLD", "Healthy", {"Relative strength": 0}, {"Relative strength": "Healthy · stable"})
     context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
     html, _ = render(80, 79, coins, [], context, risk, [0, 0])
     assert "width:100%;background:#e2e8f0" in html
+    assert "width:0%;background:#16803c" not in html
+    assert "Healthy · stable" in html
+
+
+def test_exit_risk_direction_warns_before_confirmed_score_changes():
+    btc = _frame(100, 1.0)
+    frames = {f"C{i}": _frame(50 + i, 1.2) for i in range(10)}
+    coins = [coin(symbol=name, rel_7d=5, rel_30d=15, rsi=62) for name in frames]
+    baseline = assess_exit_risk(btc, _frame(0.05, .0001), frames, coins)
+    weaker = [coin(symbol=name, rel_7d=2, rel_30d=11, rsi=62) for name in frames]
+    result = assess_exit_risk(btc, _frame(0.05, .00008), frames, weaker, previous_metrics=baseline.metrics)
+    assert result.components["Relative strength"] == 0
+    assert result.directions["Relative strength"] == "Healthy · worsening"
 
 
 def test_portfolio_issue_table_parser():

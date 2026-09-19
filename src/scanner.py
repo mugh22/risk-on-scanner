@@ -91,7 +91,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     previous=load(state_path); comparable=previous if previous.get("model_version")==MODEL_VERSION else {}
     signals={c.symbol:c.signal for c in coins}; notes=changes(comparable,score,signals)
     dominance=safe_snapshot(data_cfg.get("timeout_seconds",15))
-    exit_risk=assess_exit_risk(btc_frame,ethbtc,frames,coins,dominance,previous.get("dominance"))
+    exit_risk=assess_exit_risk(btc_frame,ethbtc,frames,coins,dominance,previous.get("dominance"),previous.get("exit_risk_metrics"))
     history=(previous.get("exit_risk_history") or [])[-19:]+[exit_risk.score]
     by_symbol = {"BTC": btc, **{coin.symbol: coin for coin in coins}}
     protections = {symbol: assess_profit_protection(coin, exit_risk.score) for symbol, coin in by_symbol.items()}
@@ -125,7 +125,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
     else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
-    state={"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"dominance":dominance or previous.get("dominance",{}),"signals":signals}
+    state={"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"exit_risk_components":exit_risk.components,"exit_risk_metrics":exit_risk.metrics,"dominance":dominance or previous.get("dominance",{}),"signals":signals}
     save(state_path,state)
     append_run(history_path,{**state,"regime":regime(score),"buy_count":sum(c.signal=="BUY" for c in coins),"watch_count":sum(c.signal=="WATCH" for c in coins)})
     LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0

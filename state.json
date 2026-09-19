@@ -1,40 +1,41 @@
 {
-  "risk_score": 91.6,
+  "risk_score": 67.8,
   "exit_risk": 1.5,
   "exit_risk_history": [
     3.5,
+    1.5,
     1.5
   ],
   "dominance": {
-    "btc_d": 58.304,
-    "eth_d": 11.509,
-    "usdt_d": 6.566,
-    "usdc_d": 2.66,
-    "stable_d": 11.004,
-    "concentration": 79.039,
-    "stable_btc_ratio": 0.18874,
-    "alt_ex_stable_btc": 0.329
+    "btc_d": 58.307,
+    "eth_d": 11.502,
+    "usdt_d": 6.556,
+    "usdc_d": 2.656,
+    "stable_d": 10.987,
+    "concentration": 79.022,
+    "stable_btc_ratio": 0.18844,
+    "alt_ex_stable_btc": 0.3293
   },
   "signals": {
-    "ETH": "WATCH",
+    "ETH": "NO SIGNAL",
     "SOL": "WATCH",
-    "XRP": "NO SIGNAL",
-    "BNB": "NO SIGNAL",
-    "ADA": "BUY",
+    "XRP": "WATCH",
+    "BNB": "WATCH",
+    "ADA": "WATCH",
     "DOGE": "NO SIGNAL",
     "AVAX": "WATCH",
-    "LINK": "WATCH",
+    "LINK": "NO SIGNAL",
     "NEAR": "WATCH",
     "ARB": "WATCH",
     "OP": "WATCH",
-    "SUI": "WATCH",
+    "SUI": "NO SIGNAL",
     "APT": "WATCH",
     "INJ": "WATCH",
-    "RENDER": "BUY",
+    "RENDER": "NO SIGNAL",
     "TAO": "WATCH",
     "AAVE": "WATCH",
     "UNI": "WATCH",
-    "ONDO": "WATCH",
-    "SEI": "WATCH"
+    "ONDO": "NO SIGNAL",
+    "SEI": "NO SIGNAL"
   }
 }

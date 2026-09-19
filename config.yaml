@@ -2,7 +2,7 @@ symbols: [ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, IN
 benchmark: BTC
 data:
   quote: USDT
-  days: 240
+  days: 300
   timeout_seconds: 20
   retries: 3
 weights:
@@ -29,4 +29,3 @@ signals:
 email:
   enabled: true
   subject_prefix: Crypto Risk-On
-

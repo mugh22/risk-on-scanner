@@ -6,6 +6,9 @@ A selective, transparent Python 3.12 scanner that measures crypto risk appetite,
 
 - Downloads daily OHLCV candles from Binance's public API; no market-data key is required.
 - Produces a 0–100 market Risk-On Score from BTC trend, ETH/BTC trend, breadth, and aggregate alt/BTC momentum.
+- Produces a separate 0–100 Alt Exit Risk Score and a direct `HOLD`, `CAUTION`, `REDUCE`, or `EXIT MOST ALT RISK` call.
+- Detects deterioration using median alt/BTC relative strength, participation breadth and its 7-day change, failed highs/exhaustion, BTC trend stress, and capital concentration.
+- Adds a mobile-readable component chart, a rolling 20-scan exit-risk chart, and an optional BTC/ETH/stablecoin dominance snapshot to the same email.
 - Produces a 0–100 Alt Strength Score from 7D/30D BTC-relative returns, trend, momentum, volume, and breakout confirmation.
 - Classifies each asset as `BUY`, `WATCH`, or `NO SIGNAL`. A BUY requires a risk-on regime and at least six independent confirmations.
 - Suppresses BUY signals when RSI, distance above EMA20, or the daily move indicates chasing.
@@ -58,5 +61,4 @@ Example headline: `RISK-ON SCORE: 74/100 — RISK-ON`. Ranked rows include price
 
 ## Limitations
 
-Daily candles can miss intraday changes. Exchange availability and symbol mapping vary. The first run has no comparison history. GitHub cache eviction may also reset history. BTC dominance is intentionally omitted until a reliable credential-free historical feed is configured; no missing indicator is fabricated. Signals are systematic technical research, not financial advice or guaranteed outcomes.
-
+Daily candles can miss intraday changes. Exchange availability and symbol mapping vary. The first run has no comparison history. GitHub cache eviction may also reset history. Market-cap dominance is obtained from CoinGecko as optional context and accumulated in scanner state over time; if that source is unavailable, the core Binance-based scan and email still complete. The decision model uses confirmation across independent signal families and does not treat fixed dominance levels as permanent truths. Signals are systematic technical research, not financial advice or guaranteed outcomes.

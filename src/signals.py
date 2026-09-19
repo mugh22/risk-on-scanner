@@ -16,9 +16,12 @@ def classify(c: CoinResult, risk_score: float, cfg: dict) -> str:
     extended, flags = is_overextended(c, cfg)
     c.reasons.extend(f"- {flag}" for flag in flags)
     confirmations = sum([c.rel_30d > 0, c.rel_7d > 0, c.price > c.ema20, c.ema20 > c.ema50, c.macd_hist > 0, c.volume_ratio >= cfg["min_volume_ratio"], c.breakout])
-    if risk_score >= cfg["min_risk_on_score"] and c.score >= cfg["min_buy_score"] and confirmations >= 6 and not extended:
+    timeframe_confirmed = c.rel_30d > 0 and c.weekly_constructive and c.daily_rel_confirmations >= 2
+    c.reasons.append(("+" if c.weekly_constructive else "-") + f" completed week vs BTC {c.weekly_rel:+.1f}%")
+    c.reasons.append(("+" if c.daily_rel_confirmations >= 2 else "-") + f" last 3 closed days: {c.daily_rel_confirmations}/3 beat BTC")
+    if risk_score >= cfg["min_risk_on_score"] and c.score >= cfg["min_buy_score"] and confirmations >= 6 and timeframe_confirmed and not extended:
         return "BUY"
-    if c.score >= cfg["min_watch_score"] and confirmations >= 4:
+    if c.score >= cfg["min_watch_score"] and confirmations >= 4 and c.rel_30d > 0:
         return "WATCH"
     return "NO SIGNAL"
 

@@ -26,10 +26,11 @@ def classify(c: CoinResult, risk_score: float, cfg: dict) -> str:
     return "NO SIGNAL"
 
 
-def levels(c: CoinResult, recent_high: float, recent_low: float) -> None:
-    c.entry_low, c.entry_high = c.price - 0.35 * c.atr, c.price + 0.15 * c.atr
-    c.invalidation = max(c.price - 1.5 * c.atr, recent_low - 0.25 * c.atr)
-    risk = c.price - c.invalidation
-    c.target1 = max(recent_high, c.price + 2 * c.atr)
-    c.target2 = c.price + 3.5 * c.atr
-    c.reward_risk = (c.target1 - c.price) / risk if risk > 0 else None
+def levels(c: CoinResult, recent_high: float, recent_low: float, base_price: float | None = None) -> None:
+    price = c.price if base_price is None else base_price
+    c.entry_low, c.entry_high = price - 0.35 * c.atr, price + 0.15 * c.atr
+    c.invalidation = max(price - 1.5 * c.atr, recent_low - 0.25 * c.atr)
+    risk = price - c.invalidation
+    c.target1 = max(recent_high, price + 2 * c.atr)
+    c.target2 = price + 3.5 * c.atr
+    c.reward_risk = (c.target1 - price) / risk if risk > 0 else None

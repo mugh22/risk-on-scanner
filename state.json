@@ -1,13 +1,14 @@
 {
   "risk_score": 91.6,
-  "exit_risk": 3.5,
+  "exit_risk": 1.5,
   "exit_risk_history": [
-    3.5
+    3.5,
+    1.5
   ],
   "dominance": {
     "btc_d": 58.304,
     "eth_d": 11.509,
-    "usdt_d": 6.567,
+    "usdt_d": 6.566,
     "usdc_d": 2.66,
     "stable_d": 11.004,
     "concentration": 79.039,

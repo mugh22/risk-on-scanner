@@ -5,9 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Runs just after 12:00 and 20:00 America/Chicago year-round. Avoiding minute
-    # zero reduces GitHub's documented top-of-hour schedule congestion.
-    - cron: "5 17,18,1,2 * * *"
+    # Native timezone scheduling handles CST/CDT. The second trigger in each
+    # window is a fallback; persisted state prevents duplicate emails.
+    - cron: "17 12 * * *"
+      timezone: "America/Chicago"
+    - cron: "47 12 * * *"
+      timezone: "America/Chicago"
+    - cron: "17 20 * * *"
+      timezone: "America/Chicago"
+    - cron: "47 20 * * *"
+      timezone: "America/Chicago"
 
 concurrency:
   group: risk-on-scanner
@@ -22,16 +29,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Gate scheduled runs by Central time
-        id: gate
+      - name: Checkout persistent scanner data
+        uses: actions/checkout@v4
+        with:
+          ref: scanner-data
+          path: .scanner-data
+          fetch-depth: 1
+      - name: Restore persistent scanner state
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" || "${{ github.event_name }}" == "push" ]]; then
+          if [[ -f .scanner-data/state.json ]]; then
+            cp .scanner-data/state.json state.json
+          fi
+      - name: Deduplicate scheduled reporting window
+        id: gate
+        shell: bash
+        env:
+          SCHEDULE_EXPR: ${{ github.event.schedule }}
+        run: |
+          if [[ "${{ github.event_name }}" != "schedule" ]]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-          elif [[ "$(TZ=America/Chicago date +%H)" == "12" || "$(TZ=America/Chicago date +%H)" == "20" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
+            exit 0
+          fi
+          target_hour="$(awk '{print $2}' <<< "$SCHEDULE_EXPR")"
+          slot="$(TZ=America/Chicago date +%F)-${target_hour}"
+          previous_slot="$(jq -r '.last_email_window // empty' state.json 2>/dev/null || true)"
+          echo "slot=$slot" >> "$GITHUB_OUTPUT"
+          if [[ "$previous_slot" == "$slot" ]]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Reporting window $slot already emailed; fallback run will exit."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.run == 'true'
@@ -41,20 +69,6 @@ jobs:
       - name: Install dependencies
         if: steps.gate.outputs.run == 'true'
         run: pip install -r requirements.txt
-      - name: Checkout persistent scanner data
-        if: steps.gate.outputs.run == 'true'
-        uses: actions/checkout@v4
-        with:
-          ref: scanner-data
-          path: .scanner-data
-          fetch-depth: 1
-      - name: Restore persistent scanner state
-        if: steps.gate.outputs.run == 'true'
-        shell: bash
-        run: |
-          if [[ -f .scanner-data/state.json ]]; then
-            cp .scanner-data/state.json state.json
-          fi
       - name: Test
         if: steps.gate.outputs.run == 'true'
         run: python -m pytest -q
@@ -76,6 +90,11 @@ jobs:
         if: steps.gate.outputs.run == 'true' && success()
         shell: bash
         run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            tmp="$(mktemp)"
+            jq --arg slot "${{ steps.gate.outputs.slot }}" '.last_email_window = $slot' state.json > "$tmp"
+            mv "$tmp" state.json
+          fi
           cp state.json .scanner-data/state.json
           git -C .scanner-data config user.name "risk-on-scanner[bot]"
           git -C .scanner-data config user.email "risk-on-scanner[bot]@users.noreply.github.com"

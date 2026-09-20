@@ -9,7 +9,7 @@ from src.reporting import render, render_weekly
 from src.portfolio import parse_portfolio_table
 from src.coinbase_portfolio import holdings_from_accounts, merge_holdings
 from src.portfolio import Holding
-from src.scanner import build_portfolio_rows
+from src.scanner import build_portfolio_rows, previous_closed_score
 from src.profit_protection import assess_profit_protection
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
@@ -125,6 +125,7 @@ def test_report_prefers_live_price_but_keeps_signal_close():
     context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80, "breadth_rel30": 70, "weekly_breadth": 70, "daily_confirmation_breadth": 60, "month_regime": 80, "weekly_close": 75, "last_3_closes": 65}
     html, _ = render(70, 70, [item], [], context, risk, [10, 10])
     assert "$107.0000" in html and "$100.0000" in html
+    assert "Previous daily close: 70.0 → Current: 70.0 (+0.0)" in html
 
 
 def test_zero_component_still_has_visible_bar_track():

@@ -88,7 +88,7 @@ def render(
     portfolio_rows = portfolio_rows or []
     market_heat = market_heat or {"score": 0, "level": "LOW", "action": "HOLD"}
     title = f"RISK-ON SCORE: {score:.0f}/100 — {regime(score)}"
-    delta = "New closed-candle model baseline" if previous is None else f"Previous: {previous:.0f} → Current: {score:.0f} ({score-previous:+.0f})"
+    delta = "New closed-candle model baseline" if previous is None else f"Previous daily close: {previous:.1f} → Current: {score:.1f} ({score-previous:+.1f})"
     ranked = sorted(coins, key=lambda c: c.score, reverse=True)
     buys = [c for c in ranked if c.signal == "BUY"]
     others = [c for c in ranked if c.signal != "BUY"]

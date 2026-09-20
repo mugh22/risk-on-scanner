@@ -74,7 +74,8 @@ def _portfolio_html(portfolio_rows: list[dict], portfolio_note: str | None) -> s
         f"<td>{escape(row['signal'])}</td><td><b>{row['heat']:.0f}</b></td><td>{escape(row['action'])}</td></tr>"
         for row in portfolio_rows
     )
-    return f"{cards}<div class='scroll detail-table'><table><tr><th>Asset</th><th>Qty</th><th>Price</th><th>Value</th><th>Weight</th><th>P/L</th><th>Signal</th><th>Heat</th><th>Action</th></tr>{rows}</table></div>"
+    source = f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ""
+    return f"{cards}{source}<div class='scroll detail-table'><table><tr><th>Asset</th><th>Qty</th><th>Price</th><th>Value</th><th>Weight</th><th>P/L</th><th>Signal</th><th>Heat</th><th>Action</th></tr>{rows}</table></div>"
 
 
 def render(
@@ -160,7 +161,7 @@ def render_weekly(
     html = f"""<!doctype html><html><head><meta name='viewport' content='width=device-width'><style>{css}</style></head><body>
 <div class='hero' style='background:{color}'><small>WEEKLY CRYPTO OUTLOOK · COMPLETED CANDLES ONLY</small><br><b>{escape(market['posture'])} — {market['score']:.0f}/100</b><div class='sub'>{escape(market['horizon'])}</div></div>
 <h2>What to do this week</h2><div class='call'><b>Base plan:</b> {escape(base)}</div><div class='call'><b>Portfolio concentration:</b> largest position {concentration:.1f}% · broad exit risk {exit_risk.score:.0f}/100 ({escape(exit_risk.level)})</div>
-<h2>Your portfolio — weekly decisions</h2>{'' if portfolio_rows else f"<p>{escape(portfolio_note or 'Portfolio not configured.')}</p>"}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Action</th></tr>{''.join(portfolio)}</table></div>
+<h2>Your portfolio — weekly decisions</h2>{f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ''}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Action</th></tr>{''.join(portfolio)}</table></div>
 <h2>Multi-week market structure</h2><div class='grid'><div class='metric'><b>{market['above4']:.0f}%</b><small>Above 4W EMA</small></div><div class='metric'><b>{market['above10']:.0f}%</b><small>Above 10W EMA</small></div><div class='metric'><b>{market['rel4']:.0f}%</b><small>Beat BTC over 4W</small></div><div class='metric'><b>{market['rel12']:.0f}%</b><small>Beat BTC over 12W</small></div><div class='metric'><b>{market['distribution']:.0f}%</b><small>Weekly weakening</small></div></div><p><b>BTC weekly:</b> {escape(btc_line)}</p><p><b>Rotation:</b> BTC.D {dominance.get('btc_d',0):.1f}% · ETH.D {dominance.get('eth_d',0):.1f}% · Stablecoin dominance {dominance.get('stable_d',0):.1f}%</p>
 <h2>2–6 week scenario map</h2><div class='scenario'><b>Base:</b> {escape(base)}</div><div class='scenario'><b>Bull confirmation:</b> {escape(bull)}</div><div class='scenario'><b>Bear / protection trigger:</b> {escape(bear)}</div>
 <h2>Weekly relative-strength leaders</h2><div class='scroll'><table><tr><th>Asset</th><th>Trend</th><th>4W</th><th>4W/BTC</th><th>12W/BTC</th><th>Positive weeks</th><th>From 12W high</th></tr>{leaders}</table></div>

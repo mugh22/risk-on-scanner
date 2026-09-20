@@ -89,7 +89,9 @@ def previous_closed_score(btc_frame: pd.DataFrame, ethbtc: pd.DataFrame | None,
                           frames: dict[str, pd.DataFrame], alt_weights: dict,
                           risk_weights: dict) -> float | None:
     """Recalculate the regime at the prior completed daily close."""
-    if len(btc_frame) < 202 or any(len(frame) < 202 for frame in frames.values()):
+    # EMA200 is optional in scoring; 62 rows cover the longest required
+    # lookback used by returns, recent levels, and the prior-close slice.
+    if len(btc_frame) < 62 or any(len(frame) < 62 for frame in frames.values()):
         return None
     prior_btc_frame = btc_frame.iloc[:-1].copy()
     prior_btc = analyze("BTC", prior_btc_frame, prior_btc_frame, alt_weights)

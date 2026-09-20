@@ -1,7 +1,7 @@
 {
   "model_version": "closed-candle-v1",
   "risk_score": 77.0,
-  "exit_risk": 1.5,
+  "exit_risk": 4.5,
   "exit_risk_history": [
     3.5,
     1.5,
@@ -15,14 +15,15 @@
     1.5,
     1.5,
     4.0,
-    1.5
+    1.5,
+    4.5
   ],
   "exit_risk_components": {
     "Relative strength": 0,
     "Breadth deterioration": 0,
     "Exhaustion / distribution": 0,
     "BTC trend stress": 0,
-    "Capital concentration": 15
+    "Capital concentration": 45
   },
   "exit_risk_metrics": {
     "median_rel7": 8.84,
@@ -38,18 +39,18 @@
     "extended_pct": 23.8,
     "failed_high_pct": 0.0,
     "weekly_red_pct": 0.0,
-    "concentration": 79.74,
-    "stable_btc_ratio": 0.1886
+    "concentration": 79.87,
+    "stable_btc_ratio": 0.1911
   },
   "dominance": {
-    "btc_d": 58.868,
-    "eth_d": 11.565,
-    "usdt_d": 6.624,
-    "usdc_d": 2.682,
-    "stable_d": 11.1,
-    "concentration": 79.739,
-    "stable_btc_ratio": 0.18857,
-    "alt_ex_stable_btc": 0.3137
+    "btc_d": 58.955,
+    "eth_d": 11.473,
+    "usdt_d": 6.723,
+    "usdc_d": 2.722,
+    "stable_d": 11.267,
+    "concentration": 79.873,
+    "stable_btc_ratio": 0.19112,
+    "alt_ex_stable_btc": 0.3105
   },
   "signals": {
     "ETH": "WATCH",

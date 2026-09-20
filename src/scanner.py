@@ -16,11 +16,12 @@ from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
 from .portfolio import fallback_spot_prices, load_portfolio
 from .profit_protection import assess_profit_protection, heat_call
-from .reporting import render
+from .reporting import render, render_weekly
 from .scoring import CoinResult, regime, score_coin
 from .signals import classify, levels
 from .state import append_run, changes, load, save
 from .timeframes import timeframe_evidence
+from .weekly import holding_action, snapshot as weekly_snapshot, weekly_market
 
 LOG = logging.getLogger(__name__)
 MODEL_VERSION = "closed-candle-v1"
@@ -60,7 +61,7 @@ def market_score(btc: CoinResult, ethbtc: pd.DataFrame | None, coins: list[CoinR
     return round(score,1), {"btc_constructive":btc_component>=75,"eth_btc_positive":eth_component>=75,"breadth_20":breadth20,"breadth_rel30":breadth30,"weekly_breadth":weekly_breadth,"daily_confirmation_breadth":daily_breadth,"month_regime":month_regime,"weekly_close":weekly_close,"last_3_closes":last_3_closes}
 
 
-def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None) -> int:
+def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None, report_mode: str = "daily") -> int:
     cfg = yaml.safe_load(Path(config_path).read_text()); data_cfg=cfg["data"]
     holdings, portfolio_note = load_portfolio()
     client = BinanceClient(data_cfg["timeout_seconds"], data_cfg["retries"]); quote=data_cfg["quote"]
@@ -118,10 +119,24 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         portfolio_rows.append({**row, "symbol": holding.symbol, "quantity": holding.quantity, "value": value, "allocation": 100*value/max(total_value, .000001), "pnl": pnl})
     if (datetime.now(timezone.utc) - quote_time).total_seconds() > 180:
         raise RuntimeError("Live quotes became stale before report rendering")
-    html,text=render(score,comparable.get("risk_score"),coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,quote_time,quote_source)
+    if report_mode == "weekly":
+        weekly_frames = {"BTC": btc_frame, **frames}
+        weekly_items = {}
+        for symbol, frame in weekly_frames.items():
+            try: weekly_items[symbol] = weekly_snapshot(symbol, frame, btc_frame)
+            except ValueError as exc: LOG.warning("Weekly analysis skipped %s: %s", symbol, exc)
+        weekly_context = weekly_market(weekly_items)
+        for row in portfolio_rows:
+            item = weekly_items.get(row["symbol"])
+            row["weekly"] = item
+            if item: row["weekly_action"] = holding_action(item, row["allocation"], exit_risk.score)
+        html,text=render_weekly(weekly_context,weekly_items,portfolio_rows,portfolio_note,exit_risk,dominance,quote_time,quote_source)
+    else:
+        html,text=render(score,comparable.get("risk_score"),coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,quote_time,quote_source)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
-    if exit_risk.score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"
+    if report_mode == "weekly": subject=f"Weekly Crypto Outlook: {weekly_context['posture']} | 2–6 Week Window"
+    elif exit_risk.score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"
     elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
     else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
@@ -132,7 +147,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
 
 
 def main() -> int:
-    load_dotenv(); p=argparse.ArgumentParser(); p.add_argument("--config",default="config.yaml"); p.add_argument("--state",default="state.json"); p.add_argument("--history"); p.add_argument("--report-dir",default="reports"); p.add_argument("--no-email",action="store_true"); a=p.parse_args(); logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(name)s: %(message)s"); return run(a.config,a.state,a.report_dir,a.no_email,a.history)
+    load_dotenv(); p=argparse.ArgumentParser(); p.add_argument("--config",default="config.yaml"); p.add_argument("--state",default="state.json"); p.add_argument("--history"); p.add_argument("--report-dir",default="reports"); p.add_argument("--no-email",action="store_true"); p.add_argument("--report-mode",choices=("daily","weekly"),default="daily"); a=p.parse_args(); logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(name)s: %(message)s"); return run(a.config,a.state,a.report_dir,a.no_email,a.history,a.report_mode)
 
 
 if __name__ == "__main__": raise SystemExit(main())

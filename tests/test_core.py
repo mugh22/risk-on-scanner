@@ -7,6 +7,8 @@ from src.exit_risk import assess_exit_risk
 from src.exit_risk import ExitRiskResult
 from src.reporting import render, render_weekly
 from src.portfolio import parse_portfolio_table
+from src.coinbase_portfolio import holdings_from_accounts, merge_holdings
+from src.portfolio import Holding
 from src.profit_protection import assess_profit_protection
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
@@ -154,6 +156,18 @@ def test_portfolio_issue_table_parser():
     holdings = parse_portfolio_table(body)
     assert [h.symbol for h in holdings] == ["BTC", "SOL"]
     assert holdings[0].average_cost == 40000
+
+
+def test_coinbase_balances_are_combined_and_issue_metadata_is_preserved():
+    accounts = [
+        {"currency": "ARB", "available_balance": {"value": "100"}, "hold": {"value": "5"}},
+        {"currency": "ARB", "available_balance": {"value": "2"}},
+        {"currency": "USD", "available_balance": {"value": "0"}},
+    ]
+    live = holdings_from_accounts(accounts)
+    merged = merge_holdings(live, [Holding("ARB", 999, .55, 20), Holding("AERO", 10, 1.1)])
+    assert merged[0] == Holding("ARB", 107, .55, 20)
+    assert merged[1] == Holding("AERO", 10, 1.1)
 
 
 def test_profit_protection_separates_hot_rally_from_exit_risk():

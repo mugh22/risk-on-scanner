@@ -9,6 +9,7 @@ from src.reporting import render, render_weekly
 from src.portfolio import parse_portfolio_table
 from src.coinbase_portfolio import holdings_from_accounts, merge_holdings
 from src.portfolio import Holding
+from src.scanner import build_portfolio_rows
 from src.profit_protection import assess_profit_protection
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
@@ -168,6 +169,18 @@ def test_coinbase_balances_are_combined_and_issue_metadata_is_preserved():
     merged = merge_holdings(live, [Holding("ARB", 999, .55, 20), Holding("AERO", 10, 1.1)])
     assert merged[0] == Holding("ARB", 107, .55, 20)
     assert merged[1] == Holding("AERO", 10, 1.1)
+
+
+def test_portfolio_dust_is_filtered_and_rows_are_sorted_by_allocation():
+    raw = [
+        {"holding": Holding("SMALL", 5), "price": 1, "signal": "CASH", "heat": 0, "action": "HOLD"},
+        {"holding": Holding("MID", 2), "price": 10, "signal": "WATCH", "heat": 10, "action": "HOLD"},
+        {"holding": Holding("BIG", 10), "price": 10, "signal": "WATCH", "heat": 20, "action": "HOLD"},
+    ]
+    rows, excluded = build_portfolio_rows(raw)
+    assert excluded == 1
+    assert [row["symbol"] for row in rows] == ["BIG", "MID"]
+    assert round(sum(row["allocation"] for row in rows), 8) == 100
 
 
 def test_profit_protection_separates_hot_rally_from_exit_risk():

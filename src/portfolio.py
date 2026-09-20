@@ -58,8 +58,8 @@ def parse_portfolio_table(markdown: str) -> list[Holding]:
     return []
 
 
-def load_portfolio() -> tuple[list[Holding], str | None]:
-    """Read portfolio configuration from a GitHub issue; fail open for reporting."""
+def load_issue_portfolio() -> tuple[list[Holding], str | None]:
+    """Read portfolio metadata/fallback quantities from a GitHub issue."""
     token = os.getenv("GITHUB_TOKEN")
     repository = os.getenv("GITHUB_REPOSITORY")
     if not token or not repository:
@@ -83,6 +83,20 @@ def load_portfolio() -> tuple[list[Holding], str | None]:
     except (httpx.HTTPError, ValueError) as exc:
         LOG.warning("Portfolio issue could not be read: %s", type(exc).__name__)
         return [], "Portfolio data could not be read; the market report still completed normally."
+
+
+def load_portfolio() -> tuple[list[Holding], str | None]:
+    """Prefer live Coinbase quantities and fail safely to the portfolio issue."""
+    manual, manual_note = load_issue_portfolio()
+    try:
+        from .coinbase_portfolio import fetch_coinbase_holdings, merge_holdings
+        coinbase, source = fetch_coinbase_holdings()
+        return merge_holdings(coinbase, manual), source
+    except Exception as exc:
+        LOG.warning("Coinbase portfolio unavailable; using issue fallback: %s", type(exc).__name__)
+        if manual:
+            return manual, f"Coinbase unavailable ({type(exc).__name__}); using GitHub issue quantities."
+        return [], manual_note or f"Coinbase unavailable ({type(exc).__name__}) and no issue fallback was found."
 
 
 def fallback_spot_prices(symbols: list[str]) -> dict[str, float]:

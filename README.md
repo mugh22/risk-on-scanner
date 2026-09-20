@@ -107,3 +107,5 @@ Repository secrets:
 - `COINBASE_API_PRIVATE_KEY`
 
 The key must be View/read-only; never grant Trade or Transfer permissions.
+
+The workflow logs only the number of non-zero balances loaded; credential values and holdings are never logged.

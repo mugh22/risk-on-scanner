@@ -5,10 +5,11 @@ import pytest
 from src.indicators import ema, period_return, rsi
 from src.exit_risk import assess_exit_risk
 from src.exit_risk import ExitRiskResult
-from src.reporting import render
+from src.reporting import render, render_weekly
 from src.portfolio import parse_portfolio_table
 from src.profit_protection import assess_profit_protection
 from src.timeframes import completed_daily, completed_weekly_closes
+from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
 from src.scoring import CoinResult, regime, score_coin
 from src.signals import classify, is_overextended, levels
 
@@ -169,3 +170,22 @@ def test_open_daily_and_current_week_are_excluded():
     weekly = completed_weekly_closes(daily, now.to_pydatetime())
     assert daily.time.max() == pd.Timestamp("2026-09-18T00:00:00Z")
     assert weekly.index.max() == pd.Timestamp("2026-09-07T00:00:00Z")
+
+
+def test_weekly_mode_uses_completed_weeks_and_multiweek_relative_strength():
+    btc = _frame(100, 1.0, 240)
+    alt = _frame(50, 1.2, 240)
+    bars = weekly_bars(alt)
+    item = weekly_snapshot("ALT", alt, btc)
+    market = weekly_market({"BTC": weekly_snapshot("BTC", btc, btc), "ALT": item})
+    assert len(bars) >= 30
+    assert item.relative_4w > 0 and item.relative_12w > 0
+    assert item.trend in {"ADVANCING", "CONSTRUCTIVE"}
+    assert market["horizon"]
+    assert "HOLD" in holding_action(item, 10, 10)
+    risk = ExitRiskResult(20, "LOW", "HOLD", "Healthy", {"Relative strength": 0})
+    html, text = render_weekly(market, {"BTC": weekly_snapshot("BTC", btc, btc), "ALT": item},
+                               [{"symbol": "ALT", "allocation": 10, "weekly": item,
+                                 "weekly_action": holding_action(item, 10, 10)}], None, risk, {}, None, None)
+    assert "2–6 week scenario map" in html
+    assert "WEEKLY CRYPTO OUTLOOK" in text

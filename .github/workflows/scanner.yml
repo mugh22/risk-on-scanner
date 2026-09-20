@@ -4,10 +4,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    # Wake at :15 every hour during schedule verification. config/report_schedule.json decides which
-    # America/Chicago hours send a report, without editing this workflow.
-    - cron: "15 * * * *"
+    inputs:
+      report_mode:
+        description: Report type
+        required: false
+        default: daily
+        type: choice
+        options:
+          - daily
+          - weekly
 
 concurrency:
   group: risk-on-scanner
@@ -34,33 +39,13 @@ jobs:
           if [[ -f .scanner-data/state.json ]]; then
             cp .scanner-data/state.json state.json
           fi
-      - name: Deduplicate scheduled reporting window
+      - name: Initialize run gate
         id: gate
         shell: bash
         env:
           SCHEDULE_EXPR: ${{ github.event.schedule }}
         run: |
-          if [[ "${{ github.event_name }}" != "schedule" ]]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          timezone="$(jq -r '.timezone // "America/Chicago"' config/report_schedule.json)"
-          central_hour="$(TZ="$timezone" date +%H)"
-          configured="$(jq -r --arg hour "$central_hour" '.report_times[] | select(startswith($hour + ":"))' config/report_schedule.json | head -1)"
-          if [[ -z "$configured" ]]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Not a configured reporting hour: $central_hour in $timezone."
-            exit 0
-          fi
-          slot="$(TZ="$timezone" date +%F)-${central_hour}"
-          previous_slot="$(jq -r '.last_email_window // empty' state.json 2>/dev/null || true)"
-          echo "slot=$slot" >> "$GITHUB_OUTPUT"
-          if [[ "$previous_slot" == "$slot" ]]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Reporting window $slot already emailed; fallback run will exit."
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          fi
+          echo "run=true" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.run == 'true'
         with:
@@ -85,16 +70,12 @@ jobs:
           if [[ "${{ github.event_name }}" == "push" && "${{ github.event.head_commit.message }}" != *"[email-test]"* ]]; then
             args+=(--no-email)
           fi
-          python -m src.scanner "${args[@]}"
+          report_mode="${{ inputs.report_mode || 'daily' }}"
+          python -m src.scanner "${args[@]}" --report-mode "$report_mode"
       - name: Publish persistent scanner state and history
         if: steps.gate.outputs.run == 'true' && success()
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            tmp="$(mktemp)"
-            jq --arg slot "${{ steps.gate.outputs.slot }}" '.last_email_window = $slot' state.json > "$tmp"
-            mv "$tmp" state.json
-          fi
           cp state.json .scanner-data/state.json
           git -C .scanner-data config user.name "risk-on-scanner[bot]"
           git -C .scanner-data config user.email "risk-on-scanner[bot]@users.noreply.github.com"

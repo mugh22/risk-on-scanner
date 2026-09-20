@@ -93,3 +93,17 @@ The scanner supports two intentionally different reports:
 
 Trigger them through `workflow_dispatch` with a `report_mode` input. The recommended external schedules are
 daily at `00:20 UTC` and weekly at `00:30 UTC` every Monday (Sunday evening in Central time).
+
+## Coinbase portfolio synchronization
+
+When a Coinbase read-only key is configured, report quantities are refreshed from Coinbase on every run.
+The GitHub portfolio issue remains the source for average-cost and target-allocation overrides and also
+supports external holdings not present in Coinbase. If Coinbase is unavailable, the report explicitly
+labels the fallback and uses issue quantities rather than silently returning an empty portfolio.
+
+Repository secrets:
+
+- `COINBASE_API_KEY_NAME`
+- `COINBASE_API_PRIVATE_KEY`
+
+The key must be View/read-only; never grant Trade or Transfer permissions.

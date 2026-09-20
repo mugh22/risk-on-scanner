@@ -109,3 +109,5 @@ Repository secrets:
 The key must be View/read-only; never grant Trade or Transfer permissions.
 
 The workflow logs only the number of non-zero balances loaded; credential values and holdings are never logged.
+
+Portfolio report rows exclude balances valued at $5 or less and are ordered by current allocation, largest first.

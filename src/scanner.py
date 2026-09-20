@@ -25,6 +25,7 @@ from .weekly import holding_action, snapshot as weekly_snapshot, weekly_market
 
 LOG = logging.getLogger(__name__)
 MODEL_VERSION = "closed-candle-v1"
+PORTFOLIO_MIN_VALUE_USD = 5.0
 
 
 def analyze(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, weights: dict) -> CoinResult:
@@ -59,6 +60,29 @@ def market_score(btc: CoinResult, ethbtc: pd.DataFrame | None, coins: list[CoinR
     parts = {"month_regime":month_regime,"weekly_close":weekly_close,"last_3_closes":last_3_closes}
     score = sum(parts[k]*weights[k] for k in weights)/sum(weights.values())
     return round(score,1), {"btc_constructive":btc_component>=75,"eth_btc_positive":eth_component>=75,"breadth_20":breadth20,"breadth_rel30":breadth30,"weekly_breadth":weekly_breadth,"daily_confirmation_breadth":daily_breadth,"month_regime":month_regime,"weekly_close":weekly_close,"last_3_closes":last_3_closes}
+
+
+def build_portfolio_rows(raw_rows: list[dict], minimum_value: float = PORTFOLIO_MIN_VALUE_USD) -> tuple[list[dict], int]:
+    """Exclude dust, calculate weights over visible holdings, and rank by allocation."""
+    valued = [(row, row["holding"].quantity * row["price"]) for row in raw_rows]
+    included = [(row, value) for row, value in valued if value > minimum_value]
+    excluded_count = len(valued) - len(included)
+    total_value = sum(value for _, value in included)
+    portfolio_rows = []
+    for row, value in included:
+        holding = row["holding"]
+        price = row["price"]
+        pnl = "N/A" if holding.average_cost is None else f"{(price/holding.average_cost-1)*100:+.1f}%"
+        portfolio_rows.append({
+            **{key: item for key, item in row.items() if key != "holding"},
+            "symbol": holding.symbol,
+            "quantity": holding.quantity,
+            "value": value,
+            "allocation": 100 * value / max(total_value, .000001),
+            "pnl": pnl,
+        })
+    portfolio_rows.sort(key=lambda row: row["allocation"], reverse=True)
+    return portfolio_rows, excluded_count
 
 
 def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None, report_mode: str = "daily") -> int:
@@ -111,12 +135,10 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             raw_rows.append({"holding": holding, "price": coin.live_price, "signal": coin.signal, "heat": protection.score, "action": protection.action})
         elif holding.symbol in fallback_prices:
             raw_rows.append({"holding": holding, "price": fallback_prices[holding.symbol], "signal": "PRICE ONLY", "heat": 0.0, "action": "NOT SCORED"})
-    total_value = sum(row["holding"].quantity * row["price"] for row in raw_rows)
-    portfolio_rows = []
-    for row in raw_rows:
-        holding = row.pop("holding"); value = holding.quantity * row["price"]
-        pnl = "N/A" if holding.average_cost is None else f"{(row['price']/holding.average_cost-1)*100:+.1f}%"
-        portfolio_rows.append({**row, "symbol": holding.symbol, "quantity": holding.quantity, "value": value, "allocation": 100*value/max(total_value, .000001), "pnl": pnl})
+    portfolio_rows, dust_count = build_portfolio_rows(raw_rows)
+    if dust_count:
+        dust_note = f"{dust_count} balance{'s' if dust_count != 1 else ''} valued at ${PORTFOLIO_MIN_VALUE_USD:.0f} or less excluded."
+        portfolio_note = f"{portfolio_note} {dust_note}" if portfolio_note else dust_note
     if (datetime.now(timezone.utc) - quote_time).total_seconds() > 180:
         raise RuntimeError("Live quotes became stale before report rendering")
     if report_mode == "weekly":

@@ -28,7 +28,7 @@ def append_run(path: str | None, data: dict) -> None:
 
 def changes(previous: dict, score: float, signals: dict[str, str]) -> list[str]:
     notes = []
-    if "risk_score" in previous: notes.append(f"Risk-On Score {previous['risk_score']:.0f} → {score:.0f} ({score-previous['risk_score']:+.0f})")
+    if "risk_score" in previous: notes.append(f"Risk-On Score {previous['risk_score']:.1f} → {score:.1f} ({score-previous['risk_score']:+.1f})")
     old = previous.get("signals", {})
     for symbol, signal in signals.items():
         if signal == "BUY" and old.get(symbol) != "BUY": notes.append(f"NEW BUY SIGNAL: {symbol}")

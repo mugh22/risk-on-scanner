@@ -83,3 +83,13 @@ Each exit-risk component shows both a strict confirmed-risk score and a separate
 ## Limitations
 
 Daily candles can miss intraday changes. Exchange availability and symbol mapping vary. The first persisted run has limited comparison history. Market-cap dominance is obtained from CoinGecko as optional context and accumulated in scanner state over time; if that source is unavailable, the core Binance-based scan and email still complete. The decision model uses confirmation across independent signal families and does not treat fixed dominance levels as permanent truths. Signals are systematic technical research, not financial advice or guaranteed outcomes.
+# Report modes
+
+The scanner supports two intentionally different reports:
+
+- `daily`: concise portfolio actions, exit risk, rally heat, and confirmed daily signals.
+- `weekly`: completed-week analysis with a 2–6 week scenario window, portfolio concentration,
+  4-week and 12-week strength versus BTC, weekly trend, momentum, drawdown, and profit-protection actions.
+
+Trigger them through `workflow_dispatch` with a `report_mode` input. The recommended external schedules are
+daily at `00:20 UTC` and weekly at `00:30 UTC` every Monday (Sunday evening in Central time).

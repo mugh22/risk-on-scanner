@@ -5,16 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Native timezone scheduling handles CST/CDT. The second trigger in each
-    # window is a fallback; persisted state prevents duplicate emails.
-    - cron: "17 12 * * *"
-      timezone: "America/Chicago"
-    - cron: "47 12 * * *"
-      timezone: "America/Chicago"
-    - cron: "17 20 * * *"
-      timezone: "America/Chicago"
-    - cron: "47 20 * * *"
-      timezone: "America/Chicago"
+    # GitHub cron is UTC. These cover 12 PM and 8 PM Central across CST/CDT.
+    # The :47 entries are fallbacks; persisted state prevents duplicate emails.
+    - cron: "17 1,2,17,18 * * *"
+    - cron: "47 1,2,17,18 * * *"
 
 concurrency:
   group: risk-on-scanner
@@ -51,8 +45,13 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          target_hour="$(awk '{print $2}' <<< "$SCHEDULE_EXPR")"
-          slot="$(TZ=America/Chicago date +%F)-${target_hour}"
+          central_hour="$(TZ=America/Chicago date +%H)"
+          if [[ "$central_hour" != "12" && "$central_hour" != "20" ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Not a reporting window: current Central hour is $central_hour."
+            exit 0
+          fi
+          slot="$(TZ=America/Chicago date +%F)-${central_hour}"
           previous_slot="$(jq -r '.last_email_window // empty' state.json 2>/dev/null || true)"
           echo "slot=$slot" >> "$GITHUB_OUTPUT"
           if [[ "$previous_slot" == "$slot" ]]; then

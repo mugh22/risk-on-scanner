@@ -5,9 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Wake at :05 every hour. config/report_schedule.json decides which
+    # Wake at :15 every hour during schedule verification. config/report_schedule.json decides which
     # America/Chicago hours send a report, without editing this workflow.
-    - cron: "5 * * * *"
+    - cron: "15 * * * *"
 
 concurrency:
   group: risk-on-scanner

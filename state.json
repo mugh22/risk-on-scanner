@@ -1,7 +1,7 @@
 {
   "model_version": "closed-candle-v1",
   "risk_score": 77.0,
-  "exit_risk": 4.0,
+  "exit_risk": 1.5,
   "exit_risk_history": [
     3.5,
     1.5,
@@ -14,14 +14,15 @@
     2.5,
     1.5,
     1.5,
-    4.0
+    4.0,
+    1.5
   ],
   "exit_risk_components": {
     "Relative strength": 0,
     "Breadth deterioration": 0,
     "Exhaustion / distribution": 0,
     "BTC trend stress": 0,
-    "Capital concentration": 40
+    "Capital concentration": 15
   },
   "exit_risk_metrics": {
     "median_rel7": 8.84,

@@ -85,6 +85,22 @@ def build_portfolio_rows(raw_rows: list[dict], minimum_value: float = PORTFOLIO_
     return portfolio_rows, excluded_count
 
 
+def previous_closed_score(btc_frame: pd.DataFrame, ethbtc: pd.DataFrame | None,
+                          frames: dict[str, pd.DataFrame], alt_weights: dict,
+                          risk_weights: dict) -> float | None:
+    """Recalculate the regime at the prior completed daily close."""
+    if len(btc_frame) < 202 or any(len(frame) < 202 for frame in frames.values()):
+        return None
+    prior_btc_frame = btc_frame.iloc[:-1].copy()
+    prior_btc = analyze("BTC", prior_btc_frame, prior_btc_frame, alt_weights)
+    prior_ethbtc = ethbtc.iloc[:-1].copy() if ethbtc is not None and len(ethbtc) > 1 else None
+    prior_coins = [
+        analyze(symbol, frame.iloc[:-1].copy(), prior_btc_frame, alt_weights)
+        for symbol, frame in frames.items()
+    ]
+    return market_score(prior_btc, prior_ethbtc, prior_coins, risk_weights)[0]
+
+
 def run(config_path: str, state_path: str, report_dir: str, no_email: bool = False, history_path: str | None = None, report_mode: str = "daily") -> int:
     cfg = yaml.safe_load(Path(config_path).read_text()); data_cfg=cfg["data"]
     holdings, portfolio_note = load_portfolio()
@@ -112,9 +128,16 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         frame = frames[coin.symbol]
         levels(coin, float(frame.high.tail(60).iloc[:-1].max()), float(frame.low.tail(20).min()), coin.live_price)
     score, context=market_score(btc,ethbtc,coins,cfg["weights"]["risk_on"])
+    prior_score = previous_closed_score(
+        btc_frame, ethbtc, frames, cfg["weights"]["alt_strength"], cfg["weights"]["risk_on"]
+    )
     for coin in coins: coin.signal=classify(coin,score,cfg["signals"])
     previous=load(state_path); comparable=previous if previous.get("model_version")==MODEL_VERSION else {}
-    signals={c.symbol:c.signal for c in coins}; notes=changes(comparable,score,signals)
+    signals={c.symbol:c.signal for c in coins}
+    comparison = dict(comparable)
+    if prior_score is not None:
+        comparison["risk_score"] = prior_score
+    notes=changes(comparison,score,signals)
     dominance=safe_snapshot(data_cfg.get("timeout_seconds",15))
     exit_risk=assess_exit_risk(btc_frame,ethbtc,frames,coins,dominance,previous.get("dominance"),previous.get("exit_risk_metrics"))
     history=(previous.get("exit_risk_history") or [])[-19:]+[exit_risk.score]
@@ -154,7 +177,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             if item: row["weekly_action"] = holding_action(item, row["allocation"], exit_risk.score)
         html,text=render_weekly(weekly_context,weekly_items,portfolio_rows,portfolio_note,exit_risk,dominance,quote_time,quote_source)
     else:
-        html,text=render(score,comparable.get("risk_score"),coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,quote_time,quote_source)
+        html,text=render(score,prior_score,coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,quote_time,quote_source)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
     if report_mode == "weekly": subject=f"Weekly Crypto Outlook: {weekly_context['posture']} | 2–6 Week Window"

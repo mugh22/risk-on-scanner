@@ -20,6 +20,7 @@
     1.5,
     1.5,
     1.5,
+    1.5,
     1.5
   ],
   "exit_risk_components": {
@@ -43,18 +44,18 @@
     "extended_pct": 23.8,
     "failed_high_pct": 0.0,
     "weekly_red_pct": 0.0,
-    "concentration": 79.81,
+    "concentration": 79.84,
     "stable_btc_ratio": 0.1908
   },
   "dominance": {
-    "btc_d": 58.913,
-    "eth_d": 11.477,
-    "usdt_d": 6.709,
+    "btc_d": 58.934,
+    "eth_d": 11.478,
+    "usdt_d": 6.71,
     "usdc_d": 2.716,
-    "stable_d": 11.242,
-    "concentration": 79.813,
-    "stable_btc_ratio": 0.19083,
-    "alt_ex_stable_btc": 0.3118
+    "stable_d": 11.245,
+    "concentration": 79.838,
+    "stable_btc_ratio": 0.19081,
+    "alt_ex_stable_btc": 0.3112
   },
   "signals": {
     "ETH": "WATCH",

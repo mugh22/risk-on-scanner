@@ -18,8 +18,8 @@ def _frame(periods=180, start=100, step=.5):
 
 def test_feature_frame_is_point_in_time_and_complete():
     features = feature_frame(_frame(), _frame(start=200, step=.4))
-    market_features = {"market_breadth_ema20", "market_breadth_relative_7d", "market_median_relative_30d"}
-    assert (set(FEATURES) - market_features).issubset(features.columns)
+    derived_features = {name for name in FEATURES if name.startswith(("market_", "prior_"))}
+    assert (set(FEATURES) - derived_features).issubset(features.columns)
     assert len(features) == 180
     assert features.iloc[-1].relative_30d > 0
     assert features.iloc[-1].low < features.iloc[-1].close
@@ -51,16 +51,20 @@ def test_training_and_prediction_are_deterministic():
     dataset["upside"] = (dataset["relative_30d"] + dataset["return_7d"] > 0).astype(int)
     dataset["outperform_btc"] = (dataset["relative_7d"] > 0).astype(int)
     dataset["drawdown"] = (dataset["volatility_20d"] > 0).astype(int)
+    for name in FEATURES:
+        if name not in dataset:
+            dataset[name] = .5
     first, quality = train_models(dataset, .2)
     second, _ = train_models(dataset, .2)
     frame, btc = _frame(), _frame(start=200, step=.4)
     market = current_market_features({"ALT": frame}, btc)
+    outcomes = {name: .5 for name in FEATURES if name.startswith(("prior_", "market_prior_"))}
     a = predict("ALT", frame, btc, first, {"protect_drawdown_probability": .45,
                 "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
-                "maximum_drawdown_probability": .3}, market)
+                "maximum_drawdown_probability": .3}, market, outcome_context=outcomes)
     b = predict("ALT", frame, btc, second, {"protect_drawdown_probability": .45,
                 "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
-                "maximum_drawdown_probability": .3}, market)
+                "maximum_drawdown_probability": .3}, market, outcome_context=outcomes)
     assert a.symbol == b.symbol and a.action == b.action and a.confidence == b.confidence
     assert a.upside_probability == pytest.approx(b.upside_probability)
     assert a.outperformance_probability == pytest.approx(b.outperformance_probability)
@@ -97,9 +101,11 @@ def test_unvalidated_model_cannot_emit_actionable_language():
                         {name: "logistic" for name in ("upside", "outperform_btc", "drawdown")},
                         {name: .5 for name in ("upside", "outperform_btc", "drawdown")})
     frame, btc = _frame(), _frame(start=200, step=.4)
+    outcomes = {name: .5 for name in FEATURES if name.startswith(("prior_", "market_prior_"))}
     result = predict("ALT", frame, btc, models, {"protect_drawdown_probability": .45,
                      "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
-                     "maximum_drawdown_probability": .3}, current_market_features({"ALT": frame}, btc), weak)
+                     "maximum_drawdown_probability": .3}, current_market_features({"ALT": frame}, btc), weak,
+                     outcome_context=outcomes)
     assert result.action == "NO VALIDATED EDGE — IGNORE"
 
 

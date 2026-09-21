@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from .emailer import send
 from .market_data import BASES, BinanceClient
-from .model_b import current_market_features, predict, train_models, training_dataset
+from .model_b import current_market_features, current_outcome_context, predict, train_models, training_dataset
 from .model_b_reporting import render_model_b
 from .portfolio import load_portfolio
 from .scanner import PORTFOLIO_MIN_VALUE_USD
@@ -96,7 +96,8 @@ def run(config_path: str, report_dir: str, no_email: bool = False) -> int:
     models, quality = train_models(dataset, float(train_cfg["validation_fraction"]))
     market_features = current_market_features(frames, btc)
     predictions = [predict(symbol, frame, btc, models, cfg["decision"], market_features, quality,
-                           float(train_cfg["minimum_validated_balanced_accuracy"]))
+                           float(train_cfg["minimum_validated_balanced_accuracy"]),
+                           current_outcome_context(dataset, symbol))
                    for symbol, frame in frames.items()]
     holdings, portfolio_note = load_portfolio()
     portfolio_rows, dust = _portfolio_rows(holdings, predictions)

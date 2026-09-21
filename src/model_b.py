@@ -24,6 +24,8 @@ FEATURES = [
     "btc_return_7d", "btc_return_30d", "btc_return_60d",
     "btc_distance_ema20", "btc_ema20_slope_5d", "btc_volatility_20d", "btc_drawdown_60d",
     "market_breadth_ema20", "market_breadth_relative_7d", "market_median_relative_30d",
+    "prior_upside_rate", "prior_outperform_btc_rate", "prior_drawdown_rate",
+    "market_prior_upside_rate", "market_prior_outperform_btc_rate", "market_prior_drawdown_rate",
 ]
 TARGETS = ("upside", "outperform_btc", "drawdown")
 
@@ -129,6 +131,15 @@ def training_dataset(frames: dict[str, pd.DataFrame], btc: pd.DataFrame, cfg: di
     dataset = pd.concat(examples, ignore_index=True)
     minimum = int(cfg.get("minimum_history_days", 90))
     dataset = dataset.loc[dataset.groupby("symbol").cumcount() >= minimum]
+    horizon = int(cfg["horizon_days"])
+    dataset = dataset.sort_values(["symbol", "time"]).reset_index(drop=True)
+    for target in TARGETS:
+        dataset[f"prior_{target}_rate"] = dataset.groupby("symbol")[target].transform(
+            lambda values: values.shift(horizon + 1).rolling(180, min_periods=30).mean()
+        )
+        market_rate = dataset.groupby("time")[target].mean().sort_index()
+        market_rate = market_rate.shift(horizon + 1).rolling(180, min_periods=30).mean()
+        dataset[f"market_prior_{target}_rate"] = dataset["time"].map(market_rate)
     # Cross-sectional conditions describe whether strength is isolated or broad.
     market = dataset.groupby("time").agg(
         market_breadth_ema20=("distance_ema20", lambda values: float((values > 0).mean()) * 100),
@@ -137,6 +148,17 @@ def training_dataset(frames: dict[str, pd.DataFrame], btc: pd.DataFrame, cfg: di
     ).reset_index()
     dataset = dataset.merge(market, on="time", how="left")
     return dataset.dropna(subset=[*FEATURES, *TARGETS]).sort_values("time").reset_index(drop=True)
+
+
+def current_outcome_context(dataset: pd.DataFrame, symbol: str) -> dict[str, float]:
+    """Use only already-resolved historical labels to form current regime priors."""
+    symbol_rows = dataset.loc[dataset.symbol == symbol].tail(180)
+    market_rows = dataset.tail(180 * max(1, dataset.symbol.nunique()))
+    context = {}
+    for target in TARGETS:
+        context[f"prior_{target}_rate"] = float(symbol_rows[target].mean()) if len(symbol_rows) else float(dataset[target].mean())
+        context[f"market_prior_{target}_rate"] = float(market_rows[target].mean())
+    return context
 
 
 def _pipeline(model) -> Pipeline:
@@ -248,16 +270,19 @@ def current_market_features(frames: dict[str, pd.DataFrame], btc: pd.DataFrame) 
 
 def predict(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, models: dict[str, Pipeline], decision: dict,
             market_features: dict[str, float] | None = None, quality: ModelQuality | None = None,
-            minimum_validated_accuracy: float = .60) -> AdaptivePrediction:
+            minimum_validated_accuracy: float = .60, outcome_context: dict[str, float] | None = None) -> AdaptivePrediction:
     features = feature_frame(frame, btc)
     for name, value in (market_features or {}).items():
+        features[name] = value
+    for name, value in (outcome_context or {}).items():
         features[name] = value
     row = features.dropna(subset=FEATURES).iloc[-1]
     sample = pd.DataFrame([{name: row[name] for name in FEATURES}])
     probabilities = {target: float(models[target].predict_proba(sample)[0, 1]) for target in TARGETS}
-    upside_valid = quality is None or (quality.balanced_accuracy.get("upside") or 0) >= minimum_validated_accuracy
-    relative_valid = quality is None or (quality.balanced_accuracy.get("outperform_btc") or 0) >= minimum_validated_accuracy
-    drawdown_valid = quality is None or (quality.balanced_accuracy.get("drawdown") or 0) >= minimum_validated_accuracy
+    def validated(target: str) -> bool:
+        return quality is None or min(quality.balanced_accuracy.get(target) or 0,
+                                      quality.cross_validation_accuracy.get(target) or 0) >= minimum_validated_accuracy
+    upside_valid, relative_valid, drawdown_valid = (validated(target) for target in TARGETS)
     if not any((upside_valid, relative_valid, drawdown_valid)):
         action = "NO VALIDATED EDGE — IGNORE"
     elif drawdown_valid and probabilities["drawdown"] >= float(decision["protect_drawdown_probability"]):

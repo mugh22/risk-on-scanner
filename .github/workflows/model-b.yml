@@ -1,0 +1,45 @@
+name: MoQuant Adaptive - Model B
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: moquant-adaptive-model-b
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  adaptive-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-model-b.txt
+      - name: Protect and test Model A compatibility
+        run: python -m pytest -q
+      - name: Generate independent Model B email
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          GITHUB_TOKEN: ${{ github.token }}
+          COINBASE_API_KEY_NAME: ${{ secrets.COINBASE_API_KEY_NAME }}
+          COINBASE_API_PRIVATE_KEY: ${{ secrets.COINBASE_API_PRIVATE_KEY }}
+          COINBASE_API_KEY: ${{ secrets.COINBASE_API_KEY }}
+          COINBASE_API_SECRET: ${{ secrets.COINBASE_API_SECRET }}
+        run: python -m src.model_b_scanner
+      - name: Upload Model B report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-b-report-${{ github.run_number }}
+          path: reports/model-b/
+          if-no-files-found: warn
+          retention-days: 30

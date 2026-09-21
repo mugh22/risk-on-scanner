@@ -77,15 +77,34 @@ def assess_positioning(
         stable_d_change = float(dominance.get("stable_d", 0)) - float(previous_dominance.get("stable_d", 0))
     narrowing = rotation == "LATE / NARROWING ROTATION" or (btc_d_change > .45 and rel7 < rel30)
 
+    recent_high = btc.recent_high or btc_live
+    resistance_gap = 100 * (recent_high / btc_live - 1) if btc_live else 0.0
+    pullback = 100 * (btc_live / recent_high - 1) if recent_high else 0.0
+
     if exit_risk.score >= 60 or market_regime == "BEAR / RISK-OFF":
         deploy_status = "FAILED / DEFENSIVE"
         deploy_action = "Do not add; require weekly repair before deploying new capital."
+    elif -1.5 <= resistance_gap <= 2.5 and not btc.breakout_retest:
+        deploy_status = "WAIT — BTC NEAR RESISTANCE"
+        deploy_action = "No dip is present; wait for a pullback or completed breakout retest."
+    elif btc.breakout and not btc.breakout_retest:
+        deploy_status = "BREAKOUT WATCH — WAIT FOR RETEST"
+        deploy_action = "Do not chase the breakout candle; require the old ceiling to hold as support."
+    elif btc.breakout_retest:
+        deploy_status = "RETEST ENTRY — STAGED ADDS"
+        deploy_action = "The breakout retest held; deploy gradually while invalidation remains intact."
+    elif btc.weekly_higher_low_confirmed and btc_trend and exit_risk.score < 45:
+        deploy_status = "HIGHER LOW CONFIRMED — STAGED ADDS"
+        deploy_action = "Weekly structure is confirmed; deploy in tranches rather than all at once."
+    elif pullback <= -5 and btc.price >= btc.ema50:
+        deploy_status = "EARLY DIP — PROBE ONLY"
+        deploy_action = "Support is being tested but reversal is unconfirmed; use at most 10–20%."
     elif market_heat.get("score", 0) >= 60 or btc_distance20 >= 8:
         deploy_status = "WAIT — DO NOT CHASE"
         deploy_action = "Hold reserve; add only after support or a confirmed breakout retest."
     elif btc_trend and score >= 70 and weekly >= 40 and exit_risk.score < 45:
-        deploy_status = "CONFIRMED — STAGED ADDS"
-        deploy_action = "Deploy in tranches; prioritize weekly and BTC-relative leaders."
+        deploy_status = "REVERSAL CONFIRMING — PARTIAL ADDS"
+        deploy_action = "Conditions are constructive, but retain reserve until weekly confirmation."
     elif btc_trend and score >= 55:
         deploy_status = "BUILD — PARTIAL SIZE"
         deploy_action = "Use 20–40% of planned capital; add only after confirmation."
@@ -124,5 +143,6 @@ def assess_positioning(
         {"rel7": rel7, "rel30": rel30, "weekly": weekly, "daily": daily,
          "usd_breadth": usd_breadth, "participation": participation,
          "btc_distance20": btc_distance20, "btc_d_change": btc_d_change,
-         "stable_d_change": stable_d_change},
+         "stable_d_change": stable_d_change, "resistance_gap": resistance_gap,
+         "pullback_from_high": pullback},
     )

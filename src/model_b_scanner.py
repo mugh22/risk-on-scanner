@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
+import pandas as pd
 from dotenv import load_dotenv
 
 from .emailer import send
@@ -16,6 +17,26 @@ from .portfolio import load_portfolio
 from .scanner import PORTFOLIO_MIN_VALUE_USD
 
 LOG = logging.getLogger(__name__)
+
+
+def historical_daily(client: BinanceClient, pair: str, days: int):
+    """Paginate Binance's 1,000-candle limit without changing Model A's data client."""
+    pages = []
+    end_time = None
+    remaining = days
+    while remaining > 0:
+        page = client.daily(pair, min(1000, remaining), end_time)
+        if page.empty:
+            break
+        pages.append(page)
+        remaining -= len(page)
+        if len(page) < min(1000, remaining + len(page)):
+            break
+        earliest = page["time"].min().to_pydatetime()
+        end_time = earliest - timedelta(milliseconds=1)
+    if not pages:
+        raise RuntimeError(f"No historical candles for {pair}")
+    return pd.concat(reversed(pages), ignore_index=True).drop_duplicates("time").sort_values("time").tail(days).reset_index(drop=True)
 
 
 def _portfolio_rows(holdings, predictions) -> tuple[list[dict], int]:
@@ -34,11 +55,11 @@ def run(config_path: str, report_dir: str, no_email: bool = False) -> int:
     data_cfg, train_cfg = cfg["data"], cfg["training"]
     client = BinanceClient(data_cfg["timeout_seconds"], data_cfg["retries"])
     quote, days = data_cfg["quote"], int(data_cfg["history_days"])
-    btc = client.daily(f"BTC{quote}", days)
+    btc = historical_daily(client, f"BTC{quote}", days)
     frames = {}
     for symbol in cfg["symbols"]:
         try:
-            frames[symbol] = client.daily(f"{symbol}{quote}", days)
+            frames[symbol] = historical_daily(client, f"{symbol}{quote}", days)
         except Exception as exc:
             LOG.warning("Model B skipped %s: %s", symbol, type(exc).__name__)
     if not frames:

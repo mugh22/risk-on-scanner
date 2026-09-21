@@ -1,9 +1,9 @@
 name: MoQuant Adaptive
 model_version: adaptive-tournament-v2
-symbols: [ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, INJ, RENDER, TAO, AAVE, UNI, ONDO, SEI]
+symbols: [ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, INJ, RENDER, TAO, AAVE, UNI, ONDO, SEI, MANA, FET, POL, ATOM, DOT, LTC, BCH]
 data:
   quote: USDT
-  history_days: 1000
+  history_days: 2500
   timeout_seconds: 20
   retries: 3
 training:

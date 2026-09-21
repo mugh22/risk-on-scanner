@@ -4,6 +4,7 @@ import pytest
 
 from src.model_b import AdaptivePrediction, FEATURES, ModelQuality, current_market_features, feature_frame, labeled_examples, predict, train_models
 from src.model_b_reporting import render_model_b
+from src.model_b_scanner import historical_daily
 
 
 def _frame(periods=180, start=100, step=.5):
@@ -100,3 +101,20 @@ def test_unvalidated_model_cannot_emit_actionable_language():
                      "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
                      "maximum_drawdown_probability": .3}, current_market_features({"ALT": frame}, btc), weak)
     assert result.action == "NO VALIDATED EDGE — IGNORE"
+
+
+def test_model_b_history_paginates_without_changing_model_a_client():
+    class FakeClient:
+        def __init__(self): self.calls = 0
+        def daily(self, pair, limit, end_time=None):
+            self.calls += 1
+            finish = pd.Timestamp(end_time) if end_time else pd.Timestamp("2026-01-01", tz="UTC")
+            times = pd.date_range(end=finish.floor("D"), periods=limit, freq="D", tz="UTC")
+            values = np.arange(limit, dtype=float) + 100
+            return pd.DataFrame({"time": times, "open": values, "high": values + 2,
+                                 "low": values - 2, "close": values, "volume": 1000.0})
+    client = FakeClient()
+    result = historical_daily(client, "BTCUSDT", 2200)
+    assert len(result) == 2200
+    assert client.calls == 3
+    assert result.time.is_monotonic_increasing

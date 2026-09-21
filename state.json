@@ -3,7 +3,6 @@
   "risk_score": 87.6,
   "exit_risk": 1.5,
   "exit_risk_history": [
-    4.0,
     1.5,
     4.5,
     1.5,
@@ -22,6 +21,7 @@
     1.5,
     1.5,
     2.5,
+    1.5,
     1.5
   ],
   "exit_risk_components": {
@@ -45,18 +45,20 @@
     "extended_pct": 17.1,
     "failed_high_pct": 0.0,
     "weekly_red_pct": 2.4,
-    "concentration": 78.9,
-    "stable_btc_ratio": 0.1884
+    "concentration": 78.91,
+    "stable_btc_ratio": 0.1875
   },
+  "exit_policy_call": "HOLD / SELECTIVE ADDS",
+  "exit_state_persisted": false,
   "dominance": {
-    "btc_d": 58.155,
-    "eth_d": 11.565,
-    "usdt_d": 6.535,
-    "usdc_d": 2.646,
-    "stable_d": 10.954,
-    "concentration": 78.9,
-    "stable_btc_ratio": 0.18836,
-    "alt_ex_stable_btc": 0.3323
+    "btc_d": 58.219,
+    "eth_d": 11.548,
+    "usdt_d": 6.511,
+    "usdc_d": 2.636,
+    "stable_d": 10.914,
+    "concentration": 78.914,
+    "stable_btc_ratio": 0.18746,
+    "alt_ex_stable_btc": 0.3318
   },
   "signals": {
     "ETH": "BUY",

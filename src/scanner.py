@@ -30,13 +30,13 @@ MODEL_VERSION = "closed-candle-v1"
 PORTFOLIO_MIN_VALUE_USD = 5.0
 
 
-def analyze(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, weights: dict) -> CoinResult:
+def analyze(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, weights: dict, now: datetime | None = None) -> CoinResult:
     close = frame.close
     e20, e50, e200 = ema(close, 20), ema(close, 50), ema(close, 200)
     _, _, histogram = macd(close)
     btc7, btc30 = period_return(btc.close, 7), period_return(btc.close, 30)
     result = CoinResult(symbol, float(close.iloc[-1]), period_return(close, 1), period_return(close, 7), period_return(close, 30), period_return(close, 7)-btc7, period_return(close, 30)-btc30, float(e20.iloc[-1]), float(e50.iloc[-1]), float(e200.iloc[-1]) if pd.notna(e200.iloc[-1]) else None, float(rsi(close).iloc[-1]), float(histogram.iloc[-1]), float(frame.volume.iloc[-1]/frame.volume.tail(20).mean()), bool(close.iloc[-1] > close.iloc[-21:-1].max()), float(atr(frame).iloc[-1]))
-    evidence=timeframe_evidence(frame,btc)
+    evidence=timeframe_evidence(frame,btc,now)
     result.weekly_rel=float(evidence["weekly_rel"]); result.weekly_constructive=bool(evidence["weekly_constructive"])
     result.daily_higher_closes=int(evidence["daily_higher_closes"]); result.daily_rel_confirmations=int(evidence["daily_rel_confirmations"])
     result.weekly_higher_low_confirmed=bool(evidence["weekly_higher_low_confirmed"])

@@ -11,6 +11,7 @@ from src.coinbase_portfolio import holdings_from_accounts, merge_holdings
 from src.portfolio import Holding
 from src.scanner import build_portfolio_rows, previous_closed_score
 from src.profit_protection import assess_profit_protection
+from src.positioning import assess_positioning
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
 from src.scoring import CoinResult, regime, score_coin
@@ -188,6 +189,35 @@ def test_profit_protection_separates_hot_rally_from_exit_risk():
     result = assess_profit_protection(coin(rsi=82, usd_30d=90, price=145, ema20=110, breakout=False), 5)
     assert result.score >= 60
     assert "TRIM" in result.action
+
+
+def test_positioning_separates_btc_bull_from_weak_ethbtc():
+    coins = [coin(symbol=f"C{i}", rel_7d=5, rel_30d=10,
+                  weekly_constructive=i < 6, daily_rel_confirmations=3) for i in range(10)]
+    btc = coin(symbol="BTC", live_price=121)
+    context = {"btc_constructive": True, "eth_btc_positive": False,
+               "breadth_20": 90, "breadth_rel30": 80,
+               "weekly_breadth": 60, "daily_confirmation_breadth": 80}
+    risk = ExitRiskResult(10, "LOW", "HOLD", "Healthy", {})
+    result = assess_positioning(78, context, btc, coins, risk,
+                                {"score": 30}, {}, {})
+    assert result.market_regime == "CONFIRMED RISK-ON"
+    assert result.rotation_phase == "BROAD ALT EXPANSION"
+    assert "ETH/BTC is weak" in result.evidence[3]
+
+
+def test_positioning_detects_hidden_relative_narrowing():
+    coins = [coin(symbol=f"C{i}", rel_7d=-5, rel_30d=-2,
+                  weekly_constructive=False, daily_rel_confirmations=1) for i in range(10)]
+    btc = coin(symbol="BTC", live_price=121)
+    context = {"btc_constructive": True, "eth_btc_positive": False,
+               "breadth_20": 80, "breadth_rel30": 20,
+               "weekly_breadth": 10, "daily_confirmation_breadth": 20}
+    risk = ExitRiskResult(20, "LOW", "HOLD", "Healthy", {})
+    result = assess_positioning(65, context, btc, coins, risk,
+                                {"score": 30}, {}, {})
+    assert result.rotation_phase in {"ALT RISK-OFF", "LATE / NARROWING ROTATION"}
+    assert "weak alts" in result.existing_action or "BTC" in result.existing_action
 
 
 def test_open_daily_and_current_week_are_excluded():

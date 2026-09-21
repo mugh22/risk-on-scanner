@@ -11,6 +11,7 @@ A selective, transparent Python 3.12 scanner that measures crypto risk appetite,
 - Adds Gmail-safe component bars, a rolling 20-scan exit-risk sparkline, and an optional BTC/ETH/stablecoin dominance snapshot to the same email.
 - Adds a separate Rally Heat / Profit Protection score so partial profit-taking is not confused with a broad market exit.
 - Reads an optional phone-editable portfolio from the private repository's `Portfolio Configuration — Edit This Issue` GitHub issue, automatically analyzes owned assets, and places portfolio actions before general opportunities.
+- Opens the daily email with a Market Positioning Engine that separately classifies the crypto regime, alt-rotation phase, new-capital deployment readiness, existing-position protection, and suggested reserve band. ETH/BTC is supporting rotation evidence, not a bull-market veto.
 - Produces a 0–100 Alt Strength Score from 7D/30D BTC-relative returns, trend, momentum, volume, and breakout confirmation.
 - Classifies each asset as `BUY`, `WATCH`, or `NO SIGNAL`. A BUY requires a risk-on regime and at least six independent confirmations.
 - Suppresses BUY signals when RSI, distance above EMA20, or the daily move indicates chasing.

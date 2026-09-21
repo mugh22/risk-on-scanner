@@ -47,6 +47,11 @@ class CoinResult:
     invalidation: float | None = None
     reward_risk: float | None = None
     live_price: float | None = None
+    recent_high: float | None = None
+    weekly_higher_low_confirmed: bool = False
+    breakout_retest: bool = False
+    deployment_status: str = "NOT ASSESSED"
+    deployment_reason: str = ""
 
 
 def score_coin(c: CoinResult, weights: dict[str, float]) -> tuple[float, list[str]]:

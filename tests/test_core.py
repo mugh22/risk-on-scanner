@@ -12,6 +12,7 @@ from src.portfolio import Holding
 from src.scanner import build_portfolio_rows, previous_closed_score
 from src.profit_protection import assess_profit_protection
 from src.positioning import assess_positioning
+from src.deployment import assess_asset_deployment
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
 from src.scoring import CoinResult, regime, score_coin
@@ -218,6 +219,19 @@ def test_positioning_detects_hidden_relative_narrowing():
                                 {"score": 30}, {}, {})
     assert result.rotation_phase in {"ALT RISK-OFF", "LATE / NARROWING ROTATION"}
     assert "weak alts" in result.existing_action or "BTC" in result.existing_action
+
+
+def test_asset_dip_readiness_blocks_alt_that_is_weak_against_btc():
+    item = coin(rel_7d=-4, rel_30d=-12, weekly_rel=-3, daily_rel_confirmations=1)
+    result = assess_asset_deployment(item, "RETEST ENTRY — STAGED ADDS", "EARLY SELECTIVE ROTATION", 10)
+    assert result.status == "WAIT — BTC-RELATIVE WEAKNESS"
+
+
+def test_asset_dip_readiness_allows_strong_support_hold():
+    item = coin(price=110, live_price=111, ema20=110, ema50=100, atr=4,
+                rel_7d=3, rel_30d=12, weekly_rel=2, daily_rel_confirmations=2)
+    result = assess_asset_deployment(item, "EARLY DIP — PROBE ONLY", "EARLY SELECTIVE ROTATION", 10)
+    assert result.status == "SUPPORT HOLDING — PARTIAL ENTRY"
 
 
 def test_open_daily_and_current_week_are_excluded():

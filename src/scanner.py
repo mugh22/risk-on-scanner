@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from .emailer import send
 from .dominance import safe_snapshot
 from .deployment import assess_asset_deployment
+from .decision_policy import persistent_exit_call
 from .exit_risk import assess_exit_risk
 from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
@@ -23,7 +24,7 @@ from .scoring import CoinResult, regime, score_coin
 from .signals import classify, levels
 from .state import append_run, changes, load, save
 from .timeframes import timeframe_evidence
-from .weekly import holding_action, snapshot as weekly_snapshot, weekly_market
+from .weekly import entry_action, holding_action, snapshot as weekly_snapshot, weekly_market
 
 LOG = logging.getLogger(__name__)
 MODEL_VERSION = "closed-candle-v1"
@@ -147,7 +148,15 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     notes=changes(comparison,score,signals)
     dominance=safe_snapshot(data_cfg.get("timeout_seconds",15))
     exit_risk=assess_exit_risk(btc_frame,ethbtc,frames,coins,dominance,previous.get("dominance"),previous.get("exit_risk_metrics"))
-    history=(previous.get("exit_risk_history") or [])[-19:]+[exit_risk.score]
+    prior_exit_history=(previous.get("exit_risk_history") or [])[-19:]
+    raw_exit_call=exit_risk.call
+    effective_exit_call, exit_state_persisted = persistent_exit_call(exit_risk.score, prior_exit_history, raw_exit_call)
+    decision_exit_score=max(exit_risk.score, 60.0) if exit_state_persisted else exit_risk.score
+    if exit_state_persisted:
+        exit_risk.call=effective_exit_call
+        exit_risk.level="HIGH"
+        exit_risk.summary="A recent confirmed exit warning remains active; one relief scan is not sufficient evidence of repair."
+    history=prior_exit_history+[exit_risk.score]
     by_symbol = {"BTC": btc, **{coin.symbol: coin for coin in coins}}
     protections = {symbol: assess_profit_protection(coin, exit_risk.score) for symbol, coin in by_symbol.items()}
     heat_values = [item.score for item in protections.values()]
@@ -159,7 +168,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         previous.get("dominance"),
     )
     for coin in [btc, *coins]:
-        readiness = assess_asset_deployment(coin, positioning.deployment_status, positioning.rotation_phase, exit_risk.score)
+        readiness = assess_asset_deployment(coin, positioning.deployment_status, positioning.rotation_phase, decision_exit_score)
         coin.deployment_status, coin.deployment_reason = readiness.status, readiness.reason
     raw_rows = []
     fallback_prices = fallback_spot_prices([holding.symbol for holding in holdings if holding.symbol not in by_symbol])
@@ -169,7 +178,8 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             raw_rows.append({"holding": holding, "price": 1.0, "signal": "CASH", "heat": 0.0, "action": "HOLD AS RESERVE"})
         elif coin:
             protection = protections[holding.symbol]
-            raw_rows.append({"holding": holding, "price": coin.live_price, "signal": coin.signal, "heat": protection.score, "action": protection.action,
+            holder_action = (effective_exit_call if holding.symbol != "BTC" and effective_exit_call.startswith(("REDUCE", "EXIT")) else protection.action)
+            raw_rows.append({"holding": holding, "price": coin.live_price, "signal": coin.signal, "heat": protection.score, "action": holder_action,
                              "deployment": coin.deployment_status, "deployment_reason": coin.deployment_reason})
         elif holding.symbol in fallback_prices:
             raw_rows.append({"holding": holding, "price": fallback_prices[holding.symbol], "signal": "PRICE ONLY", "heat": 0.0, "action": "NOT SCORED"})
@@ -189,18 +199,21 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         for row in portfolio_rows:
             item = weekly_items.get(row["symbol"])
             row["weekly"] = item
-            if item: row["weekly_action"] = holding_action(item, row["allocation"], exit_risk.score)
+            if item:
+                row["weekly_action"] = (effective_exit_call if row["symbol"] != "BTC" and effective_exit_call.startswith(("REDUCE", "EXIT"))
+                                        else holding_action(item, row["allocation"], decision_exit_score))
+                row["weekly_entry_action"] = entry_action(item, weekly_context, decision_exit_score)
         html,text=render_weekly(weekly_context,weekly_items,portfolio_rows,portfolio_note,exit_risk,dominance,quote_time,quote_source)
     else:
         html,text=render(score,prior_score,coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,positioning,quote_time,quote_source)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
     if report_mode == "weekly": subject=f"Weekly Crypto Outlook: {weekly_context['posture']} | 2–6 Week Window"
-    elif exit_risk.score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"
+    elif decision_exit_score >= 60: subject=f"🚨 {exit_risk.call} | Exit Risk {exit_risk.score:.0f}"
     elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
     else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
-    state={"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"exit_risk_components":exit_risk.components,"exit_risk_metrics":exit_risk.metrics,"dominance":dominance or previous.get("dominance",{}),"signals":signals,"last_email_window":previous.get("last_email_window")}
+    state={"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"exit_risk_components":exit_risk.components,"exit_risk_metrics":exit_risk.metrics,"exit_policy_call":effective_exit_call,"exit_state_persisted":exit_state_persisted,"dominance":dominance or previous.get("dominance",{}),"signals":signals,"last_email_window":previous.get("last_email_window")}
     save(state_path,state)
     append_run(history_path,{**state,"regime":regime(score),"buy_count":sum(c.signal=="BUY" for c in coins),"watch_count":sum(c.signal=="WATCH" for c in coins)})
     LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0

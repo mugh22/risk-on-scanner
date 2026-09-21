@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 
 from .emailer import send
 from .dominance import safe_snapshot
+from .deployment import assess_asset_deployment
 from .exit_risk import assess_exit_risk
 from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
@@ -38,8 +39,11 @@ def analyze(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, weights: dict) 
     evidence=timeframe_evidence(frame,btc)
     result.weekly_rel=float(evidence["weekly_rel"]); result.weekly_constructive=bool(evidence["weekly_constructive"])
     result.daily_higher_closes=int(evidence["daily_higher_closes"]); result.daily_rel_confirmations=int(evidence["daily_rel_confirmations"])
+    result.weekly_higher_low_confirmed=bool(evidence["weekly_higher_low_confirmed"])
+    result.breakout_retest=bool(evidence["breakout_retest"])
     result.score, result.reasons = score_coin(result, weights)
     levels(result, float(frame.high.tail(60).iloc[:-1].max()), float(frame.low.tail(20).min()))
+    result.recent_high = float(frame.high.tail(60).iloc[:-1].max())
     return result
 
 
@@ -154,6 +158,9 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
         score, context, btc, coins, exit_risk, market_heat, dominance,
         previous.get("dominance"),
     )
+    for coin in [btc, *coins]:
+        readiness = assess_asset_deployment(coin, positioning.deployment_status, positioning.rotation_phase, exit_risk.score)
+        coin.deployment_status, coin.deployment_reason = readiness.status, readiness.reason
     raw_rows = []
     fallback_prices = fallback_spot_prices([holding.symbol for holding in holdings if holding.symbol not in by_symbol])
     for holding in holdings:
@@ -162,7 +169,8 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             raw_rows.append({"holding": holding, "price": 1.0, "signal": "CASH", "heat": 0.0, "action": "HOLD AS RESERVE"})
         elif coin:
             protection = protections[holding.symbol]
-            raw_rows.append({"holding": holding, "price": coin.live_price, "signal": coin.signal, "heat": protection.score, "action": protection.action})
+            raw_rows.append({"holding": holding, "price": coin.live_price, "signal": coin.signal, "heat": protection.score, "action": protection.action,
+                             "deployment": coin.deployment_status, "deployment_reason": coin.deployment_reason})
         elif holding.symbol in fallback_prices:
             raw_rows.append({"holding": holding, "price": fallback_prices[holding.symbol], "signal": "PRICE ONLY", "heat": 0.0, "action": "NOT SCORED"})
     portfolio_rows, dust_count = build_portfolio_rows(raw_rows)

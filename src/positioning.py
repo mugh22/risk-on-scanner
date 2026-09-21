@@ -46,7 +46,8 @@ def assess_positioning(
     btc_trend = bool(context.get("btc_constructive"))
     eth_support = bool(context.get("eth_btc_positive"))
 
-    if exit_risk.score >= 60 or (score < 35 and not btc_trend):
+    btc_stress = float(exit_risk.components.get("BTC trend stress", 0))
+    if btc_stress >= 60 or (score < 35 and not btc_trend):
         market_regime = "BEAR / RISK-OFF"
     elif score < 55:
         market_regime = "BASE / MIXED"
@@ -81,7 +82,7 @@ def assess_positioning(
     resistance_gap = 100 * (recent_high / btc_live - 1) if btc_live else 0.0
     pullback = 100 * (btc_live / recent_high - 1) if recent_high else 0.0
 
-    if exit_risk.score >= 60 or market_regime == "BEAR / RISK-OFF":
+    if btc_stress >= 60 or market_regime == "BEAR / RISK-OFF":
         deploy_status = "FAILED / DEFENSIVE"
         deploy_action = "Do not add; require weekly repair before deploying new capital."
     elif -1.5 <= resistance_gap <= 2.5 and not btc.breakout_retest:
@@ -90,7 +91,7 @@ def assess_positioning(
     elif btc.breakout and not btc.breakout_retest:
         deploy_status = "BREAKOUT WATCH — WAIT FOR RETEST"
         deploy_action = "Do not chase the breakout candle; require the old ceiling to hold as support."
-    elif btc.breakout_retest:
+    elif btc.breakout_retest and btc.usd_1d > -3 and btc.daily_higher_closes >= 1:
         deploy_status = "RETEST ENTRY — STAGED ADDS"
         deploy_action = "The breakout retest held; deploy gradually while invalidation remains intact."
     elif btc.weekly_higher_low_confirmed and btc_trend and exit_risk.score < 45:

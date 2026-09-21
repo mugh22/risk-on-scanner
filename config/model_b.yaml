@@ -1,5 +1,5 @@
 name: MoQuant Adaptive
-model_version: adaptive-tournament-v2
+model_version: adaptive-tournament-v3-order-flow
 symbols: [ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, INJ, RENDER, TAO, AAVE, UNI, ONDO, SEI, MANA, FET, POL, ATOM, DOT, LTC, BCH]
 data:
   quote: USDT

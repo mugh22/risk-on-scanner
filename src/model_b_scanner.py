@@ -46,10 +46,11 @@ def historical_daily(client: BinanceClient, pair: str, days: int):
                 raw_count = len(rows)
                 page = pd.DataFrame(rows, columns=["time", "open", "high", "low", "close", "volume",
                                     "close_time", "quote_volume", "trades", "buy_base", "buy_quote", "ignore"])
-                for column in ("open", "high", "low", "close", "volume"):
+                for column in ("open", "high", "low", "close", "volume", "quote_volume", "trades", "buy_base", "buy_quote"):
                     page[column] = pd.to_numeric(page[column])
                 page["time"] = pd.to_datetime(page["time"], unit="ms", utc=True)
-                page = completed_daily(page[["time", "open", "high", "low", "close", "volume"]])
+                page = completed_daily(page[["time", "open", "high", "low", "close", "volume",
+                                             "quote_volume", "trades", "buy_base", "buy_quote"]])
                 break
             except (httpx.HTTPError, ValueError) as exc:
                 error = exc

@@ -21,6 +21,9 @@ FEATURES = [
     "volatility_7d", "volatility_20d", "volatility_60d",
     "drawdown_30d", "drawdown_60d", "drawdown_90d",
     "volume_ratio_20d", "range_pct",
+    "taker_buy_ratio", "taker_buy_ratio_7d", "trade_count_ratio_20d",
+    "quote_volume_ratio_20d", "body_pct", "upper_wick_pct", "lower_wick_pct",
+    "close_location", "atr14_pct",
     "btc_return_7d", "btc_return_30d", "btc_return_60d",
     "btc_distance_ema20", "btc_ema20_slope_5d", "btc_volatility_20d", "btc_drawdown_60d",
     "market_breadth_ema20", "market_breadth_relative_7d", "market_median_relative_30d",
@@ -86,6 +89,26 @@ def feature_frame(asset: pd.DataFrame, btc: pd.DataFrame) -> pd.DataFrame:
         result[f"drawdown_{days}d"] = (close / close.rolling(days).max() - 1) * 100
     result["volume_ratio_20d"] = merged["volume"] / merged["volume"].rolling(20).mean()
     result["range_pct"] = (merged["high"] - merged["low"]) / close * 100
+    # Binance daily candles contain order-flow fields that the first Model B
+    # iteration discarded.  Defaults keep synthetic/legacy test frames valid.
+    open_ = merged["open"].astype(float)
+    high = merged["high"].astype(float)
+    low = merged["low"].astype(float)
+    volume = merged["volume"].astype(float)
+    taker_buy = merged.get("buy_base", volume * .5).astype(float)
+    quote_volume = merged.get("quote_volume", volume * close).astype(float)
+    trades = merged.get("trades", pd.Series(1.0, index=merged.index)).astype(float)
+    candle_range = (high - low).replace(0, np.nan)
+    result["taker_buy_ratio"] = taker_buy / volume.replace(0, np.nan)
+    result["taker_buy_ratio_7d"] = taker_buy.rolling(7).sum() / volume.rolling(7).sum().replace(0, np.nan)
+    result["trade_count_ratio_20d"] = trades / trades.rolling(20).mean()
+    result["quote_volume_ratio_20d"] = quote_volume / quote_volume.rolling(20).mean()
+    result["body_pct"] = (close - open_) / close * 100
+    result["upper_wick_pct"] = (high - pd.concat([open_, close], axis=1).max(axis=1)) / close * 100
+    result["lower_wick_pct"] = (pd.concat([open_, close], axis=1).min(axis=1) - low) / close * 100
+    result["close_location"] = (close - low) / candle_range
+    true_range = pd.concat([(high - low), (high - close.shift()).abs(), (low - close.shift()).abs()], axis=1).max(axis=1)
+    result["atr14_pct"] = true_range.rolling(14).mean() / close * 100
     result["btc_return_7d"] = _pct(btc_close, 7)
     result["btc_return_30d"] = _pct(btc_close, 30)
     result["btc_return_60d"] = _pct(btc_close, 60)

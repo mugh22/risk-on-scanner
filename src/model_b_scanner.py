@@ -1,0 +1,82 @@
+from __future__ import annotations
+
+import argparse
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
+
+import yaml
+from dotenv import load_dotenv
+
+from .emailer import send
+from .market_data import BinanceClient
+from .model_b import predict, train_models, training_dataset
+from .model_b_reporting import render_model_b
+from .portfolio import load_portfolio
+from .scanner import PORTFOLIO_MIN_VALUE_USD
+
+LOG = logging.getLogger(__name__)
+
+
+def _portfolio_rows(holdings, predictions) -> tuple[list[dict], int]:
+    prices = {item.symbol: item.price for item in predictions}
+    valued = [(holding, holding.quantity * prices[holding.symbol]) for holding in holdings if holding.symbol in prices]
+    included = [(holding, value) for holding, value in valued if value > PORTFOLIO_MIN_VALUE_USD]
+    total = sum(value for _, value in included)
+    rows = [{"symbol": holding.symbol, "value": value, "allocation": value / max(total, 1e-9) * 100}
+            for holding, value in included]
+    rows.sort(key=lambda row: row["allocation"], reverse=True)
+    return rows, len(valued) - len(included)
+
+
+def run(config_path: str, report_dir: str, no_email: bool = False) -> int:
+    cfg = yaml.safe_load(Path(config_path).read_text())
+    data_cfg, train_cfg = cfg["data"], cfg["training"]
+    client = BinanceClient(data_cfg["timeout_seconds"], data_cfg["retries"])
+    quote, days = data_cfg["quote"], int(data_cfg["history_days"])
+    btc = client.daily(f"BTC{quote}", days)
+    frames = {}
+    for symbol in cfg["symbols"]:
+        try:
+            frames[symbol] = client.daily(f"{symbol}{quote}", days)
+        except Exception as exc:
+            LOG.warning("Model B skipped %s: %s", symbol, type(exc).__name__)
+    if not frames:
+        raise RuntimeError("Model B could not load any asset history")
+    dataset = training_dataset(frames, btc, train_cfg)
+    models, quality = train_models(dataset, float(train_cfg["validation_fraction"]))
+    predictions = [predict(symbol, frame, btc, models, cfg["decision"]) for symbol, frame in frames.items()]
+    holdings, portfolio_note = load_portfolio()
+    portfolio_rows, dust = _portfolio_rows(holdings, predictions)
+    if dust:
+        suffix = f"{dust} supported balance{'s' if dust != 1 else ''} valued at ${PORTFOLIO_MIN_VALUE_USD:.0f} or less excluded."
+        portfolio_note = f"{portfolio_note} {suffix}" if portfolio_note else suffix
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    html, text = render_model_b(predictions, quality, portfolio_rows, portfolio_note,
+                                generated_at, cfg["model_version"])
+    output = Path(report_dir); output.mkdir(parents=True, exist_ok=True)
+    (output / "report.html").write_text(html)
+    (output / "report.txt").write_text(text)
+    entries = sum(item.action == "CONSIDER STAGED ENTRY" for item in predictions)
+    defensive = sum(item.action == "PROTECT / DO NOT ADD" for item in predictions)
+    subject = f"{cfg['email']['subject_prefix']}: {entries} Entry · {defensive} Protect"
+    if cfg["email"]["enabled"] and not no_email:
+        send(subject, html, text)
+    LOG.info("Model B trained on %d observations; %d entry and %d protect calls",
+             quality.samples, entries, defensive)
+    return 0
+
+
+def main() -> int:
+    load_dotenv()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="config/model_b.yaml")
+    parser.add_argument("--report-dir", default="reports/model-b")
+    parser.add_argument("--no-email", action="store_true")
+    args = parser.parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    return run(args.config, args.report_dir, args.no_email)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

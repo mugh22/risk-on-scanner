@@ -2,19 +2,22 @@ from __future__ import annotations
 
 import argparse
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
 import pandas as pd
+import httpx
 from dotenv import load_dotenv
 
 from .emailer import send
-from .market_data import BinanceClient
+from .market_data import BASES, BinanceClient
 from .model_b import current_market_features, predict, train_models, training_dataset
 from .model_b_reporting import render_model_b
 from .portfolio import load_portfolio
 from .scanner import PORTFOLIO_MIN_VALUE_USD
+from .timeframes import completed_daily
 
 LOG = logging.getLogger(__name__)
 
@@ -25,12 +28,37 @@ def historical_daily(client: BinanceClient, pair: str, days: int):
     end_time = None
     remaining = days
     while remaining > 0:
-        page = client.daily(pair, min(1000, remaining), end_time)
+        limit = min(1000, remaining)
+        error = None
+        page = None
+        for base in BASES:
+            try:
+                params = {"symbol": pair, "interval": "1d", "limit": limit}
+                if end_time is not None:
+                    params["endTime"] = int(end_time.timestamp() * 1000)
+                response = client.client.get(f"{base}/api/v3/klines", params=params)
+                response.raise_for_status()
+                rows = response.json()
+                if not rows:
+                    raise ValueError(f"No candles for {pair}")
+                raw_count = len(rows)
+                page = pd.DataFrame(rows, columns=["time", "open", "high", "low", "close", "volume",
+                                    "close_time", "quote_volume", "trades", "buy_base", "buy_quote", "ignore"])
+                for column in ("open", "high", "low", "close", "volume"):
+                    page[column] = pd.to_numeric(page[column])
+                page["time"] = pd.to_datetime(page["time"], unit="ms", utc=True)
+                page = completed_daily(page[["time", "open", "high", "low", "close", "volume"]])
+                break
+            except (httpx.HTTPError, ValueError) as exc:
+                error = exc
+                time.sleep(.5)
+        if page is None:
+            raise RuntimeError(f"Unable to load historical {pair}: {error}")
         if page.empty:
             break
         pages.append(page)
         remaining -= len(page)
-        if len(page) < min(1000, remaining + len(page)):
+        if raw_count < limit:
             break
         earliest = page["time"].min().to_pydatetime()
         end_time = earliest - timedelta(milliseconds=1)

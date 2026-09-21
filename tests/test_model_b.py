@@ -104,17 +104,25 @@ def test_unvalidated_model_cannot_emit_actionable_language():
 
 
 def test_model_b_history_paginates_without_changing_model_a_client():
-    class FakeClient:
+    class Response:
+        def __init__(self, params): self.params = params
+        def raise_for_status(self): return None
+        def json(self):
+            limit = self.params["limit"]
+            finish = pd.Timestamp(self.params.get("endTime", pd.Timestamp("2026-01-01", tz="UTC").timestamp()*1000), unit="ms", tz="UTC")
+            rows = []
+            for index, stamp in enumerate(pd.date_range(end=finish.floor("D"), periods=limit, freq="D", tz="UTC")):
+                value = float(100 + index)
+                rows.append([int(stamp.timestamp()*1000), value, value+2, value-2, value, 1000,
+                             0, 0, 0, 0, 0, 0])
+            return rows
+    class Session:
         def __init__(self): self.calls = 0
-        def daily(self, pair, limit, end_time=None):
-            self.calls += 1
-            finish = pd.Timestamp(end_time) if end_time else pd.Timestamp("2026-01-01", tz="UTC")
-            times = pd.date_range(end=finish.floor("D"), periods=limit, freq="D", tz="UTC")
-            values = np.arange(limit, dtype=float) + 100
-            return pd.DataFrame({"time": times, "open": values, "high": values + 2,
-                                 "low": values - 2, "close": values, "volume": 1000.0})
+        def get(self, url, params): self.calls += 1; return Response(params)
+    class FakeClient:
+        def __init__(self): self.client = Session()
     client = FakeClient()
     result = historical_daily(client, "BTCUSDT", 2200)
     assert len(result) == 2200
-    assert client.calls == 3
+    assert client.client.calls == 3
     assert result.time.is_monotonic_increasing

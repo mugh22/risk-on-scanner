@@ -6,7 +6,7 @@ from html import escape
 from .exit_risk import ExitRiskResult
 from .scoring import CoinResult, regime
 from .positioning import PositioningResult
-from .weekly import WeeklySnapshot
+from .weekly import WeeklySnapshot, entry_action
 
 
 def _n(value: float | None, digits: int = 2) -> str:
@@ -157,18 +157,24 @@ def render_weekly(
             f"<tr><td><b>{escape(row['symbol'])}</b></td><td>{row['allocation']:.1f}%</td>"
             f"<td><b>{escape(item.trend)}</b></td><td>{item.return_4w:+.1f}%</td><td>{item.return_12w:+.1f}%</td>"
             f"<td>{item.relative_4w:+.1f}%</td><td>{item.relative_12w:+.1f}%</td><td>{item.rsi:.0f}</td>"
-            f"<td><b>{escape(row.get('weekly_action','HOLD'))}</b></td></tr>"
+            f"<td><b>{escape(row.get('weekly_action','HOLD'))}</b></td>"
+            f"<td><b>{escape(row.get('weekly_entry_action','WATCH'))}</b></td></tr>"
         )
     ranked = sorted((item for symbol, item in snapshots.items() if symbol != "BTC"), key=lambda x: x.relative_4w, reverse=True)
+    weekly_exit_score = max(exit_risk.score, 60) if exit_risk.call.startswith(("REDUCE", "EXIT")) else exit_risk.score
     leaders = "".join(
         f"<tr><td><b>{escape(item.symbol)}</b></td><td>{escape(item.trend)}</td><td>{item.return_4w:+.1f}%</td>"
         f"<td>{item.relative_4w:+.1f}%</td><td>{item.relative_12w:+.1f}%</td><td>{item.positive_weeks}/3</td>"
-        f"<td>{item.drawdown_12w:.1f}%</td></tr>" for item in ranked[:10]
+        f"<td>{item.drawdown_12w:.1f}%</td><td><b>{escape(entry_action(item, market, weekly_exit_score))}</b></td></tr>" for item in ranked[:10]
     )
     btc = snapshots.get("BTC")
     btc_line = "Unavailable" if not btc else f"{btc.trend} · 4W {btc.return_4w:+.1f}% · 12W {btc.return_12w:+.1f}% · weekly RSI {btc.rsi:.0f}"
     concentration = max((row["allocation"] for row in portfolio_rows), default=0)
-    if market["score"] >= 65:
+    if exit_risk.call.startswith(("REDUCE", "EXIT")):
+        base = f"{exit_risk.call}; do not add until weekly breadth and BTC-relative structure repair."
+        bull = "A defensive state clears only after sustained weekly repair, not one relief candle."
+        bear = "Continued weak closes confirm the defensive state: retain cash and reduce weaker alts first."
+    elif market["score"] >= 65:
         base = "Hold weekly leaders; add only on support or confirmed weekly continuation."
         bull = "Breadth remains above 65% and BTC holds its 10-week EMA: allow winners room for another 2–6 weeks."
         bear = "Two weak weekly closes plus falling 4-week relative breadth: trim weaker alts and rebuild cash."
@@ -181,11 +187,11 @@ def render_weekly(
     html = f"""<!doctype html><html><head><meta name='viewport' content='width=device-width'><style>{css}</style></head><body>
 <div class='hero' style='background:{color}'><small>WEEKLY CRYPTO OUTLOOK · COMPLETED CANDLES ONLY</small><br><b>{escape(market['posture'])} — {market['score']:.0f}/100</b><div class='sub'>{escape(market['horizon'])}</div></div>
 <h2>What to do this week</h2><div class='call'><b>Base plan:</b> {escape(base)}</div><div class='call'><b>Portfolio concentration:</b> largest position {concentration:.1f}% · broad exit risk {exit_risk.score:.0f}/100 ({escape(exit_risk.level)})</div>
-<h2>Your portfolio — weekly decisions</h2>{f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ''}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Action</th></tr>{''.join(portfolio)}</table></div>
+<h2>Your portfolio — weekly decisions</h2>{f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ''}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Holder action</th><th>New-capital action</th></tr>{''.join(portfolio)}</table></div>
 <h2>Multi-week market structure</h2><div class='grid'><div class='metric'><b>{market['above4']:.0f}%</b><small>Above 4W EMA</small></div><div class='metric'><b>{market['above10']:.0f}%</b><small>Above 10W EMA</small></div><div class='metric'><b>{market['rel4']:.0f}%</b><small>Beat BTC over 4W</small></div><div class='metric'><b>{market['rel12']:.0f}%</b><small>Beat BTC over 12W</small></div><div class='metric'><b>{market['distribution']:.0f}%</b><small>Weekly weakening</small></div></div><p><b>BTC weekly:</b> {escape(btc_line)}</p><p><b>Rotation:</b> BTC.D {dominance.get('btc_d',0):.1f}% · ETH.D {dominance.get('eth_d',0):.1f}% · Stablecoin dominance {dominance.get('stable_d',0):.1f}%</p>
 <h2>2–6 week scenario map</h2><div class='scenario'><b>Base:</b> {escape(base)}</div><div class='scenario'><b>Bull confirmation:</b> {escape(bull)}</div><div class='scenario'><b>Bear / protection trigger:</b> {escape(bear)}</div>
-<h2>Weekly relative-strength leaders</h2><div class='scroll'><table><tr><th>Asset</th><th>Trend</th><th>4W</th><th>4W/BTC</th><th>12W/BTC</th><th>Positive weeks</th><th>From 12W high</th></tr>{leaders}</table></div>
+<h2>Weekly relative-strength leaders</h2><div class='scroll'><table><tr><th>Asset</th><th>Trend</th><th>4W</th><th>4W/BTC</th><th>12W/BTC</th><th>Positive weeks</th><th>From 12W high</th><th>New-capital action</th></tr>{leaders}</table></div>
 <p class='muted'><small>Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}. Live portfolio prices fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC} from {escape(quote_source or 'live source')}; trend decisions use completed weekly candles. The 2–6 week window is scenario analysis, not a price prediction or guarantee.</small></p></body></html>"""
-    actions = "\n".join(f"{row['symbol']}: {row.get('weekly_action', row.get('action','NOT SCORED'))}" for row in portfolio_rows)
+    actions = "\n".join(f"{row['symbol']}: holder={row.get('weekly_action', row.get('action','NOT SCORED'))}; new capital={row.get('weekly_entry_action','WATCH')}" for row in portfolio_rows)
     text = f"WEEKLY CRYPTO OUTLOOK: {market['posture']} ({market['score']:.0f}/100)\n{market['horizon']}\n\nBASE PLAN\n{base}\n\nPORTFOLIO\n{actions or portfolio_note or 'Not configured'}\n\nSCENARIOS\nBull: {bull}\nBear: {bear}\n\nCompleted weekly-candle research; not financial advice."
     return html, text

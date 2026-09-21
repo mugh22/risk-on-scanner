@@ -46,7 +46,9 @@ def assess_positioning(
     btc_trend = bool(context.get("btc_constructive"))
     eth_support = bool(context.get("eth_btc_positive"))
 
-    if exit_risk.score >= 60 or (score < 35 and not btc_trend):
+    btc_stress = float(exit_risk.components.get("BTC trend stress", 0))
+    exit_policy_active = exit_risk.call.startswith(("REDUCE", "EXIT"))
+    if btc_stress >= 60 or (score < 35 and not btc_trend):
         market_regime = "BEAR / RISK-OFF"
     elif score < 55:
         market_regime = "BASE / MIXED"
@@ -58,7 +60,7 @@ def assess_positioning(
         market_regime = "RISK-ON UNDER STRESS"
 
     participation = (rel7 + rel30 + weekly + daily) / 4
-    if exit_risk.score >= 60 or (rel7 < 30 and rel30 < 35):
+    if exit_policy_active or exit_risk.score >= 60 or (rel7 < 30 and rel30 < 35):
         rotation = "ALT RISK-OFF"
     elif usd_breadth >= 60 and rel7 < 45 and rel30 < 45:
         rotation = "LATE / NARROWING ROTATION"
@@ -81,7 +83,7 @@ def assess_positioning(
     resistance_gap = 100 * (recent_high / btc_live - 1) if btc_live else 0.0
     pullback = 100 * (btc_live / recent_high - 1) if recent_high else 0.0
 
-    if exit_risk.score >= 60 or market_regime == "BEAR / RISK-OFF":
+    if exit_policy_active or btc_stress >= 60 or market_regime == "BEAR / RISK-OFF":
         deploy_status = "FAILED / DEFENSIVE"
         deploy_action = "Do not add; require weekly repair before deploying new capital."
     elif -1.5 <= resistance_gap <= 2.5 and not btc.breakout_retest:
@@ -90,7 +92,7 @@ def assess_positioning(
     elif btc.breakout and not btc.breakout_retest:
         deploy_status = "BREAKOUT WATCH — WAIT FOR RETEST"
         deploy_action = "Do not chase the breakout candle; require the old ceiling to hold as support."
-    elif btc.breakout_retest:
+    elif btc.breakout_retest and btc.usd_1d > -3 and btc.daily_higher_closes >= 1:
         deploy_status = "RETEST ENTRY — STAGED ADDS"
         deploy_action = "The breakout retest held; deploy gradually while invalidation remains intact."
     elif btc.weekly_higher_low_confirmed and btc_trend and exit_risk.score < 45:
@@ -112,7 +114,7 @@ def assess_positioning(
         deploy_status = "EARLY — PROBE ONLY"
         deploy_action = "Use at most 10–20%; the higher-low structure is not confirmed."
 
-    if exit_risk.score >= 60:
+    if exit_risk.score >= 60 or exit_risk.call.startswith(("REDUCE", "EXIT")):
         existing = "Reduce broad alt risk; protect cash and strongest relative leaders only."
         cash_band = "35–50%"
     elif narrowing:

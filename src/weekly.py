@@ -42,8 +42,8 @@ def weekly_bars(frame: pd.DataFrame, now: datetime | None = None) -> pd.DataFram
     return weekly.loc[weekly.index < current_week].dropna().reset_index()
 
 
-def snapshot(symbol: str, frame: pd.DataFrame, btc_frame: pd.DataFrame) -> WeeklySnapshot:
-    weekly, btc = weekly_bars(frame), weekly_bars(btc_frame)
+def snapshot(symbol: str, frame: pd.DataFrame, btc_frame: pd.DataFrame, now: datetime | None = None) -> WeeklySnapshot:
+    weekly, btc = weekly_bars(frame, now), weekly_bars(btc_frame, now)
     if len(weekly) < 13 or len(btc) < 13:
         raise ValueError(f"Insufficient completed weekly history for {symbol}")
     close, btc_close = weekly.close, btc.close
@@ -101,3 +101,19 @@ def holding_action(item: WeeklySnapshot, allocation: float, exit_risk: float) ->
     if item.trend == "ADVANCING":
         return "HOLD; TRAIL WEEKLY SUPPORT"
     return "HOLD / MONITOR WEEKLY CLOSE"
+
+
+def entry_action(item: WeeklySnapshot, market: dict, exit_risk: float) -> str:
+    """Give the weekly report an explicit new-capital decision."""
+    if exit_risk >= 60 or market["posture"] == "DEFENSIVE":
+        return "NO NEW CAPITAL"
+    if item.rsi >= 75 or item.return_4w >= 35:
+        return "WAIT — WEEKLY EXTENDED"
+    if item.trend == "ADVANCING" and market["score"] >= 60 and item.relative_4w > 0:
+        return "ADD 20–30% ON WEEKLY SUPPORT"
+    if (item.trend == "CONSTRUCTIVE" and market["score"] >= 55
+            and item.positive_weeks >= 2 and item.relative_4w > -3):
+        return "PROBE 10–20%"
+    if item.trend == "WEAKENING":
+        return "WAIT FOR WEEKLY REPAIR"
+    return "WATCH — NO WEEKLY ENTRY"

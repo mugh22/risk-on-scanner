@@ -70,9 +70,9 @@ def relative_daily_confirmations(frame: pd.DataFrame, btc: pd.DataFrame, days: i
     return int((alt_returns.iloc[-size:].to_numpy() > btc_returns.iloc[-size:].to_numpy()).sum())
 
 
-def timeframe_evidence(frame: pd.DataFrame, btc: pd.DataFrame) -> dict[str, float | bool | int]:
-    alt_weekly = completed_weekly_closes(frame)
-    btc_weekly = completed_weekly_closes(btc)
+def timeframe_evidence(frame: pd.DataFrame, btc: pd.DataFrame, now: datetime | None = None) -> dict[str, float | bool | int]:
+    alt_weekly = completed_weekly_closes(frame, now)
+    btc_weekly = completed_weekly_closes(btc, now)
     weekly_rel = 0.0
     weekly_constructive = False
     if len(alt_weekly) >= 5 and len(btc_weekly) >= 2:
@@ -85,6 +85,6 @@ def timeframe_evidence(frame: pd.DataFrame, btc: pd.DataFrame) -> dict[str, floa
         "weekly_constructive": weekly_constructive,
         "daily_higher_closes": higher_closes,
         "daily_rel_confirmations": rel_confirmations,
-        "weekly_higher_low_confirmed": weekly_higher_low_confirmed(frame),
+        "weekly_higher_low_confirmed": weekly_higher_low_confirmed(frame, now),
         "breakout_retest": breakout_retest_confirmed(frame),
     }

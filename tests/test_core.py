@@ -13,8 +13,10 @@ from src.scanner import build_portfolio_rows, previous_closed_score
 from src.profit_protection import assess_profit_protection
 from src.positioning import assess_positioning
 from src.deployment import assess_asset_deployment
+from src.decision_policy import persistent_exit_call
+from src.backtest import _effective_exit_action, _exit_grade, _grade
 from src.timeframes import completed_daily, completed_weekly_closes
-from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
+from src.weekly import entry_action, holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
 from src.scoring import CoinResult, regime, score_coin
 from src.signals import classify, is_overextended, levels
 
@@ -234,6 +236,24 @@ def test_asset_dip_readiness_allows_strong_support_hold():
     assert result.status == "SUPPORT HOLDING — PARTIAL ENTRY"
 
 
+def test_backtest_grading_does_not_treat_do_not_add_as_an_add_call():
+    assert _grade("FAILED DIP — DO NOT ADD", -12, -5, -20) == "GOOD"
+    assert _grade("FAILED DIP — DO NOT ADD", 20, 35, -3) == "MISSED UPSIDE"
+
+
+def test_backtest_grades_active_exit_separately_from_entry_avoidance():
+    assert _exit_grade("HOLD", -25, -35) == "MISSED EXIT"
+    assert _exit_grade("REDUCE ALT RISK", -25, -35) == "GOOD EXIT"
+    assert _effective_exit_action("ETH", "HOLD", "REDUCE ALT RISK") == "REDUCE ALT RISK"
+    assert _effective_exit_action("BTC", "HOLD", "REDUCE ALT RISK") == "HOLD"
+
+
+def test_confirmed_exit_state_survives_one_relief_scan():
+    call, persisted = persistent_exit_call(47, [55, 71, 62], "STOP ADDING / REVIEW WEAK ALTS")
+    assert call.startswith("REDUCE ALT RISK")
+    assert persisted
+
+
 def test_open_daily_and_current_week_are_excluded():
     now = pd.Timestamp("2026-09-19T12:00:00Z")
     time = pd.date_range("2026-09-01", "2026-09-19", freq="D", tz="UTC")
@@ -261,3 +281,22 @@ def test_weekly_mode_uses_completed_weeks_and_multiweek_relative_strength():
                                  "weekly_action": holding_action(item, 10, 10)}], None, risk, {}, None, None)
     assert "2–6 week scenario map" in html
     assert "WEEKLY CRYPTO OUTLOOK" in text
+
+
+def test_weekly_entry_action_is_explicit_and_risk_gated():
+    btc = _frame(100, 1.0, 240)
+    alt = _frame(50, 1.2, 240)
+    item = weekly_snapshot("ALT", alt, btc)
+    market = weekly_market({"BTC": weekly_snapshot("BTC", btc, btc), "ALT": item})
+    assert entry_action(item, market, 10).startswith(("ADD", "PROBE", "WAIT", "WATCH"))
+    assert entry_action(item, market, 65) == "NO NEW CAPITAL"
+
+
+def test_positioning_respects_persisted_exit_call_even_below_raw_threshold():
+    coins = [coin(symbol=f"C{i}") for i in range(10)]
+    context = {"btc_constructive": True, "eth_btc_positive": True, "breadth_20": 80,
+               "breadth_rel30": 70, "weekly_breadth": 60, "daily_confirmation_breadth": 70}
+    risk = ExitRiskResult(47, "HIGH", "REDUCE ALT RISK — DEFENSIVE STATE", "Persisted", {"BTC trend stress": 0})
+    result = assess_positioning(75, context, coin(symbol="BTC"), coins, risk, {"score": 20})
+    assert result.deployment_status == "FAILED / DEFENSIVE"
+    assert result.existing_action.startswith("Reduce")

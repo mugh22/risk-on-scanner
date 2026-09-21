@@ -1,0 +1,29 @@
+cases:
+  - date: 2022-10-31
+    name: Pre-FTX alt rally
+    focus: [BTC, DOGE, FET]
+    rationale: Tests whether a short alt rally before the November 2022 breakdown produced false confidence.
+  - date: 2023-10-24
+    name: Early confirmed FET expansion
+    focus: [BTC, FET]
+    rationale: Tests whether the model recognized FET before its major multi-month advance.
+  - date: 2024-03-15
+    name: BTC March local top
+    focus: [BTC, ETH, FET]
+    rationale: Tests profit protection immediately after BTC's sharp March 2024 expansion and reversal.
+  - date: 2024-08-06
+    name: Post-crash stabilization
+    focus: [BTC, SOL, FET]
+    rationale: Tests whether the model avoided catching the first bounce after the August liquidation event.
+  - date: 2024-09-20
+    name: Q4 recovery setup
+    focus: [BTC, SOL, FET]
+    rationale: Tests whether improving structure allowed staged deployment before the fourth-quarter advance.
+  - date: 2024-08-12
+    name: August recovery confirmation
+    focus: [BTC, SOL, FET]
+    rationale: Tests whether the model re-entered after the initial crash stabilized rather than remaining defensive indefinitely.
+  - date: 2024-11-07
+    name: BTC breakout confirmation
+    focus: [BTC, DOGE, SOL]
+    rationale: Tests whether the model participated without treating a breakout candle as a dip entry.

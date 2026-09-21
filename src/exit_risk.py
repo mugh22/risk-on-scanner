@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import pandas as pd
 
@@ -51,6 +52,7 @@ def assess_exit_risk(
     dominance: dict | None = None,
     previous_dominance: dict | None = None,
     previous_metrics: dict[str, float] | None = None,
+    now: datetime | None = None,
 ) -> ExitRiskResult:
     """Explainable, multi-confirmation warning model; higher means more alt downside risk."""
     dominance = dominance or {}
@@ -106,7 +108,7 @@ def assess_exit_risk(
         prior_high = float(close.iloc[-90:-21].max()) if len(close) >= 90 else current_high
         if rsi(close).iloc[-1] >= 68 and current_high < prior_high * 0.99:
             failed_highs += 1
-        weekly = completed_weekly_closes(frame)
+        weekly = completed_weekly_closes(frame, now)
         if len(weekly) >= 3 and weekly.iloc[-1] < weekly.iloc[-2] < weekly.iloc[-3]:
             weekly_red += 1
     n = max(len(coins), 1)

@@ -26,8 +26,12 @@ def assess_asset_deployment(
         or (coin.weekly_rel < 0 and coin.daily_rel_confirmations < 2)
     )
 
-    if exit_risk >= 60 or "FAILED" in market_status:
+    if "FAILED" in market_status:
         return AssetDeployment("FAILED DIP — DO NOT ADD", "Broad market protection overrides the individual setup.")
+    if coin.symbol != "BTC" and exit_risk >= 60:
+        if coin.rel_7d > 0 and coin.rel_30d > 0 and coin.breakout and distance20 <= 12:
+            return AssetDeployment("SELECTIVE LEADER — PROBE ONLY", "Broad alt risk is high, but this asset is independently breaking out versus BTC.")
+        return AssetDeployment("FAILED DIP — DO NOT ADD", "Broad alt-market protection overrides this individual setup.")
     if relative_weak:
         return AssetDeployment(
             "WAIT — BTC-RELATIVE WEAKNESS",
@@ -39,7 +43,9 @@ def assess_asset_deployment(
         return AssetDeployment("WAIT — MARKET LOCATION", "The asset is acceptable, but BTC has not offered a favorable entry window.")
     if coin.breakout_retest and coin.rel_30d > 0:
         return AssetDeployment("BREAKOUT RETEST — ADD", "A recent breakout level held while relative strength remained positive.")
-    if coin.weekly_higher_low_confirmed and coin.rel_30d > 0:
+    if (coin.weekly_higher_low_confirmed and coin.rel_30d > 0
+            and coin.daily_higher_closes >= 2 and coin.daily_rel_confirmations >= 2
+            and coin.macd_hist > 0):
         return AssetDeployment("HIGHER LOW CONFIRMED — ADD", "Completed weekly structure confirmed a higher low versus a prior swing low.")
     if near_support and coin.price >= coin.ema50 and coin.rel_30d > 0:
         return AssetDeployment("SUPPORT HOLDING — PARTIAL ENTRY", "Price is near EMA20, above EMA50, and outperforming BTC over 30D.")

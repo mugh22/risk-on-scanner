@@ -72,11 +72,11 @@ def _portfolio_html(portfolio_rows: list[dict], portfolio_note: str | None) -> s
     rows = "".join(
         f"<tr><td><b>{escape(row['symbol'])}</b></td><td>{row['quantity']:,.6g}</td><td>${row['price']:,.4f}</td>"
         f"<td>${row['value']:,.2f}</td><td>{row['allocation']:.1f}%</td><td>{row['pnl']}</td>"
-        f"<td>{escape(row['signal'])}</td><td><b>{row['heat']:.0f}</b></td><td>{escape(row['action'])}</td></tr>"
+        f"<td>{escape(row['signal'])}</td><td><b>{row['heat']:.0f}</b></td><td><b>{escape(row.get('deployment','NOT SCORED'))}</b></td><td>{escape(row['action'])}</td></tr>"
         for row in portfolio_rows
     )
     source = f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ""
-    return f"{cards}{source}<div class='scroll detail-table'><table><tr><th>Asset</th><th>Qty</th><th>Price</th><th>Value</th><th>Weight</th><th>P/L</th><th>Signal</th><th>Heat</th><th>Action</th></tr>{rows}</table></div>"
+    return f"{cards}{source}<div class='scroll detail-table'><table><tr><th>Asset</th><th>Qty</th><th>Price</th><th>Value</th><th>Weight</th><th>P/L</th><th>Signal</th><th>Heat</th><th>Dip readiness</th><th>Action</th></tr>{rows}</table></div>"
 
 
 def render(
@@ -95,7 +95,7 @@ def render(
     buys = [c for c in ranked if c.signal == "BUY"]
     others = [c for c in ranked if c.signal != "BUY"]
     top = buys + others[:max(0, 10-len(buys))]
-    rows = "".join(f"<tr><td><b>{escape(c.symbol)}</b></td><td>{c.score:.0f}</td><td><b>{c.signal}</b></td><td>${_n(c.live_price, 4)}</td><td>${_n(c.price, 4)}</td><td>{c.rel_30d:+.1f}%</td><td>{c.weekly_rel:+.1f}%</td><td>{c.daily_rel_confirmations}/3</td><td>{c.rsi:.1f}</td><td>{c.volume_ratio:.1f}x</td><td>{_n(c.entry_low,4)}–{_n(c.entry_high,4)}</td><td>{_n(c.target1,4)} / {_n(c.target2,4)}</td><td>{_n(c.invalidation,4)}</td></tr>" for c in top)
+    rows = "".join(f"<tr><td><b>{escape(c.symbol)}</b></td><td>{c.score:.0f}</td><td><b>{c.signal}</b></td><td><b>{escape(c.deployment_status)}</b></td><td>${_n(c.live_price, 4)}</td><td>${_n(c.price, 4)}</td><td>{c.rel_30d:+.1f}%</td><td>{c.weekly_rel:+.1f}%</td><td>{c.daily_rel_confirmations}/3</td><td>{c.rsi:.1f}</td><td>{c.volume_ratio:.1f}x</td><td>{_n(c.entry_low,4)}–{_n(c.entry_high,4)}</td><td>{_n(c.target1,4)} / {_n(c.target2,4)}</td><td>{_n(c.invalidation,4)}</td></tr>" for c in top)
     updates = "".join(f"<li>{escape(n)}</li>" for n in notes) or "<li>No material signal change.</li>"
     evidence = exit_risk.red_flags or exit_risk.supports or ["No confirmed broad exit flag."]
     evidence_html = "".join(f"<li>{escape(item)}</li>" for item in evidence[:4])
@@ -108,7 +108,8 @@ def render(
             "<div class='positioning'><small>MARKET POSITIONING ENGINE</small>"
             f"<div class='position-row'><b>MARKET</b><span>{escape(positioning.market_regime)}</span></div>"
             f"<div class='position-row'><b>ALT ROTATION</b><span>{escape(positioning.rotation_phase)}</span></div>"
-            f"<div class='position-row accent'><b>NEW CAPITAL</b><span>{escape(positioning.deployment_status)}</span></div>"
+            f"<div class='position-row accent'><b>MARKET DIP READINESS</b><span>{escape(positioning.deployment_status)}</span></div>"
+            f"<div class='position-row'><b>ALT DEPLOYMENT</b><span>{escape('SELECTIVE / ASSET-SPECIFIC' if positioning.rotation_phase != 'BROAD ALT EXPANSION' else 'BROAD BUT SETUP-DEPENDENT')}</span></div>"
             f"<p>{escape(positioning.deployment_action)}</p>"
             f"<div class='position-row'><b>EXISTING POSITIONS</b><span>{escape(positioning.existing_action)}</span></div>"
             f"<div class='position-row'><b>RESERVE BAND</b><span>{escape(positioning.cash_band)}</span></div></div>"
@@ -128,7 +129,7 @@ def render(
 <h2>Why this call</h2><ul class='compact'>{evidence_html}</ul>
 <div class='details'><h2>Market evidence</h2>{positioning_evidence}<h3>Exit-risk components</h3><table role='presentation' class='components'><tr><th>Component</th><th>Risk bar</th><th>Score</th><th>Direction</th></tr>{_bars(exit_risk.components, exit_risk.directions)}</table><p class='muted'><small>Score is confirmed risk. Direction compares the underlying evidence with the previous scan and can warn before a score threshold is crossed.</small></p><h3>Exit-risk trend</h3>{_history_chart(history)}
 <h3>{title}</h3><div class='badge'>{delta}</div><p><b>Closed-candle evidence:</b> 30-day regime {context['month_regime']:.0f}/100 · Weekly close {context['weekly_close']:.0f}/100 · Last 3 daily closes {context['last_3_closes']:.0f}/100</p><p>BTC trend: {'Constructive' if context['btc_constructive'] else 'Weak/mixed'}<br>ETH/BTC: {'Strengthening' if context['eth_btc_positive'] else 'Weakening'}<br>Breadth above EMA20: {context['breadth_20']:.0f}%<br>Breadth outperforming BTC (30D): {context['breadth_rel30']:.0f}%<br>Constructive completed weekly structures: {context['weekly_breadth']:.0f}%<br>Confirming 2 of last 3 daily closes vs BTC: {context['daily_confirmation_breadth']:.0f}%</p>{dominance_html}
-<h2>Market opportunities</h2><p class='muted'>Live quotes fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S UTC} from {escape(quote_source or 'live market source')}. Signal close is the latest completed daily candle used for scoring; execution levels use the live quote plus closed technical structure.</p><div class='scroll'><table><tr><th>Asset</th><th>Score</th><th>Signal</th><th>Live price</th><th>Signal close</th><th>30D/BTC</th><th>Week/BTC</th><th>3D confirms</th><th>RSI</th><th>Vol</th><th>Entry zone</th><th>Targets</th><th>Invalidation</th></tr>{rows}</table></div></div>
+<h2>Market opportunities</h2><p class='muted'>Dip readiness combines each asset's USD structure, BTC-relative strength, and the overall BTC market window. Live quotes fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S UTC} from {escape(quote_source or 'live market source')}.</p><div class='scroll'><table><tr><th>Asset</th><th>Score</th><th>Signal</th><th>Dip readiness</th><th>Live price</th><th>Signal close</th><th>30D/BTC</th><th>Week/BTC</th><th>3D confirms</th><th>RSI</th><th>Vol</th><th>Entry zone</th><th>Targets</th><th>Invalidation</th></tr>{rows}</table></div></div>
 <p><small>Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}. Signals use completed daily and weekly candles; intraday movement cannot flip a confirmed call. Quantitative research only; not financial advice or a guarantee.</small></p></body></html>"""
     portfolio_text = "\n".join(f"{r['symbol']}: {r['action']} | heat {r['heat']:.0f} | allocation {r['allocation']:.1f}%" for r in portfolio_rows) or (portfolio_note or "Portfolio not configured.")
     positioning_text = "" if not positioning else f"MARKET: {positioning.market_regime}\nALT ROTATION: {positioning.rotation_phase}\nNEW CAPITAL: {positioning.deployment_status}\n{positioning.deployment_action}\nEXISTING POSITIONS: {positioning.existing_action}\nRESERVE BAND: {positioning.cash_band}\n\n"

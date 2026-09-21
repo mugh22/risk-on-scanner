@@ -32,6 +32,16 @@ def test_labels_remove_unknown_future_rows():
     assert examples.iloc[-15]["upside"] in {0, 1}
 
 
+def test_upside_label_uses_intrawindow_high_not_only_final_close():
+    asset, btc = _frame(), _frame(start=200, step=.4)
+    asset.loc[101, "high"] = asset.loc[100, "close"] * 1.20
+    asset.loc[101:, "close"] = asset.loc[100, "close"]
+    cfg = {"horizon_days": 14, "upside_threshold_pct": 10,
+           "btc_outperformance_threshold_pct": 5, "drawdown_threshold_pct": -15}
+    examples = labeled_examples("ALT", asset, btc, cfg)
+    assert examples.loc[100, "upside"] == 1
+
+
 def test_training_and_prediction_are_deterministic():
     rng = np.random.default_rng(42)
     rows = 500
@@ -70,3 +80,23 @@ def test_model_b_report_is_explicitly_separate_and_probability_labeled():
     assert "Model A remains unchanged" in html
     assert "≥10% upside" in html and "≥15% drawdown" in html
     assert "MOQUANT ADAPTIVE — MODEL B" in text
+
+
+def test_unvalidated_model_cannot_emit_actionable_language():
+    rng = np.random.default_rng(7)
+    rows = 300
+    dataset = pd.DataFrame(rng.normal(size=(rows, len(FEATURES))), columns=FEATURES)
+    dataset["time"] = pd.date_range("2024-01-01", periods=rows, freq="D")
+    for target in ("upside", "outperform_btc", "drawdown"):
+        dataset[target] = np.arange(rows) % 2
+    models, _ = train_models(dataset, .2)
+    weak = ModelQuality(rows, 60, {name: .5 for name in ("upside", "outperform_btc", "drawdown")},
+                        {name: .25 for name in ("upside", "outperform_btc", "drawdown")},
+                        {name: .5 for name in ("upside", "outperform_btc", "drawdown")},
+                        {name: "logistic" for name in ("upside", "outperform_btc", "drawdown")},
+                        {name: .5 for name in ("upside", "outperform_btc", "drawdown")})
+    frame, btc = _frame(), _frame(start=200, step=.4)
+    result = predict("ALT", frame, btc, models, {"protect_drawdown_probability": .45,
+                     "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
+                     "maximum_drawdown_probability": .3}, current_market_features({"ALT": frame}, btc), weak)
+    assert result.action == "NO VALIDATED EDGE — IGNORE"

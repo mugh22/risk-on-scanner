@@ -63,7 +63,8 @@ def feature_frame(asset: pd.DataFrame, btc: pd.DataFrame) -> pd.DataFrame:
     ).copy()
     close = merged["close"].astype(float)
     btc_close = merged["btc_close"].astype(float)
-    result = pd.DataFrame({"time": merged["time"], "close": close, "low": merged["low"].astype(float)})
+    result = pd.DataFrame({"time": merged["time"], "close": close,
+                           "high": merged["high"].astype(float), "low": merged["low"].astype(float)})
     for days in (1, 3, 7, 14, 30, 60):
         result[f"return_{days}d"] = _pct(close, days)
     result["relative_7d"] = result["return_7d"] - _pct(btc_close, 7)
@@ -99,7 +100,11 @@ def labeled_examples(symbol: str, asset: pd.DataFrame, btc: pd.DataFrame, cfg: d
     features = feature_frame(asset, btc)
     future_close = features["close"].shift(-horizon)
     future_btc = features["btc_close"].shift(-horizon)
+    future_high = pd.concat(
+        [features["high"].shift(-offset) for offset in range(1, horizon + 1)], axis=1
+    ).max(axis=1)
     forward_return = (future_close / features["close"] - 1) * 100
+    maximum_upside = (future_high / features["close"] - 1) * 100
     btc_forward_return = (future_btc / features["btc_close"] - 1) * 100
     # Minimum low during the next horizon, excluding the signal close itself.
     future_low = pd.concat(
@@ -107,7 +112,7 @@ def labeled_examples(symbol: str, asset: pd.DataFrame, btc: pd.DataFrame, cfg: d
     ).min(axis=1)
     forward_drawdown = (future_low / features["close"] - 1) * 100
     features["symbol"] = symbol
-    features["upside"] = (forward_return >= float(cfg["upside_threshold_pct"])).astype(int)
+    features["upside"] = (maximum_upside >= float(cfg["upside_threshold_pct"])).astype(int)
     features["outperform_btc"] = (
         forward_return - btc_forward_return >= float(cfg["btc_outperformance_threshold_pct"])
     ).astype(int)
@@ -242,23 +247,30 @@ def current_market_features(frames: dict[str, pd.DataFrame], btc: pd.DataFrame) 
 
 
 def predict(symbol: str, frame: pd.DataFrame, btc: pd.DataFrame, models: dict[str, Pipeline], decision: dict,
-            market_features: dict[str, float] | None = None) -> AdaptivePrediction:
+            market_features: dict[str, float] | None = None, quality: ModelQuality | None = None,
+            minimum_validated_accuracy: float = .60) -> AdaptivePrediction:
     features = feature_frame(frame, btc)
     for name, value in (market_features or {}).items():
         features[name] = value
     row = features.dropna(subset=FEATURES).iloc[-1]
     sample = pd.DataFrame([{name: row[name] for name in FEATURES}])
     probabilities = {target: float(models[target].predict_proba(sample)[0, 1]) for target in TARGETS}
-    if probabilities["drawdown"] >= float(decision["protect_drawdown_probability"]):
+    upside_valid = quality is None or (quality.balanced_accuracy.get("upside") or 0) >= minimum_validated_accuracy
+    relative_valid = quality is None or (quality.balanced_accuracy.get("outperform_btc") or 0) >= minimum_validated_accuracy
+    drawdown_valid = quality is None or (quality.balanced_accuracy.get("drawdown") or 0) >= minimum_validated_accuracy
+    if not any((upside_valid, relative_valid, drawdown_valid)):
+        action = "NO VALIDATED EDGE — IGNORE"
+    elif drawdown_valid and probabilities["drawdown"] >= float(decision["protect_drawdown_probability"]):
         action = "PROTECT / DO NOT ADD"
-    elif (probabilities["upside"] >= float(decision["minimum_upside_probability"])
+    elif (upside_valid and relative_valid
+          and probabilities["upside"] >= float(decision["minimum_upside_probability"])
           and probabilities["outperform_btc"] >= float(decision["minimum_outperformance_probability"])
           and probabilities["drawdown"] <= float(decision["maximum_drawdown_probability"])):
         action = "CONSIDER STAGED ENTRY"
-    elif probabilities["drawdown"] <= float(decision["maximum_drawdown_probability"]):
+    elif drawdown_valid and probabilities["drawdown"] <= float(decision["maximum_drawdown_probability"]):
         action = "HOLD / WATCH"
     else:
-        action = "WAIT — MIXED RISK"
+        action = "UNVALIDATED — OBSERVE ONLY"
     distance = min(abs(probabilities[target] - .5) for target in TARGETS)
     confidence = "HIGH" if distance >= .22 else "MEDIUM" if distance >= .10 else "LOW"
     return AdaptivePrediction(symbol, float(row["close"]), probabilities["upside"],

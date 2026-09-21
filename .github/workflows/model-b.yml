@@ -44,7 +44,13 @@ jobs:
           COINBASE_API_PRIVATE_KEY: ${{ secrets.COINBASE_API_PRIVATE_KEY }}
           COINBASE_API_KEY: ${{ secrets.COINBASE_API_KEY }}
           COINBASE_API_SECRET: ${{ secrets.COINBASE_API_SECRET }}
-        run: python -m src.model_b_scanner
+        shell: bash
+        run: |
+          args=()
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            args+=(--no-email)
+          fi
+          python -m src.model_b_scanner "${args[@]}"
       - name: Upload Model B report
         if: always()
         uses: actions/upload-artifact@v4

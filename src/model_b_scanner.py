@@ -46,7 +46,8 @@ def run(config_path: str, report_dir: str, no_email: bool = False) -> int:
     dataset = training_dataset(frames, btc, train_cfg)
     models, quality = train_models(dataset, float(train_cfg["validation_fraction"]))
     market_features = current_market_features(frames, btc)
-    predictions = [predict(symbol, frame, btc, models, cfg["decision"], market_features)
+    predictions = [predict(symbol, frame, btc, models, cfg["decision"], market_features, quality,
+                           float(train_cfg["minimum_validated_balanced_accuracy"]))
                    for symbol, frame in frames.items()]
     holdings, portfolio_note = load_portfolio()
     portfolio_rows, dust = _portfolio_rows(holdings, predictions)

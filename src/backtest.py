@@ -11,6 +11,7 @@ import pandas as pd
 import yaml
 
 from .deployment import assess_asset_deployment
+from .decision_policy import persistent_exit_call
 from .exit_risk import assess_exit_risk
 from .market_data import BinanceClient
 from .positioning import assess_positioning
@@ -85,13 +86,14 @@ def _expand_cases(spec: dict) -> list[dict]:
     return cases
 
 
-def run_backtest(config_path: str, cases_path: str, output_dir: str) -> dict:
+def run_backtest(config_path: str, cases_path: str, output_dir: str, candidate: bool = False) -> dict:
     cfg = yaml.safe_load(Path(config_path).read_text())
     cases = _expand_cases(yaml.safe_load(Path(cases_path).read_text()))
     # Stable, long-lived Binance pairs keep the historical breadth universe
     # comparable and avoid introducing assets that did not yet exist.
     symbols = ["ETH", "SOL", "XRP", "BNB", "ADA", "DOGE", "AVAX", "LINK",
-               "NEAR", "ARB", "OP", "SUI", "APT", "INJ", "AAVE", "UNI", "FET"]
+               "NEAR", "ARB", "OP", "SUI", "APT", "INJ", "AAVE", "UNI", "FET",
+               "TAO", "POL", "ATOM"]
     latest = max(datetime.fromisoformat(str(case["date"])).replace(tzinfo=timezone.utc) for case in cases)
     end = latest + timedelta(days=100)
     client = BinanceClient(10, 1, trust_env=True)
@@ -107,6 +109,7 @@ def run_backtest(config_path: str, cases_path: str, output_dir: str) -> dict:
         ethbtc_all = None
 
     results = []
+    prior_exit_scores: list[float] = []
     for case in cases:
         as_of = datetime.fromisoformat(str(case["date"])).replace(tzinfo=timezone.utc)
         btc_frame = _cut(frames["BTC"], as_of)
@@ -132,6 +135,10 @@ def run_backtest(config_path: str, cases_path: str, output_dir: str) -> dict:
         for item in available:
             item.signal = classify(item, score, cfg["signals"])
         risk = assess_exit_risk(btc_frame, ethbtc, used_frames, available, now=as_of)
+        effective_broad_call, persisted = persistent_exit_call(risk.score, prior_exit_scores, risk.call) if candidate else (risk.call, False)
+        if persisted:
+            risk.call = effective_broad_call
+        prior_exit_scores.append(risk.score)
         protections = {item.symbol: assess_profit_protection(item, risk.score) for item in [btc, *available]}
         heats = [protection.score for protection in protections.values()]
         heat_score = round(float(pd.Series(heats).quantile(.75)), 1)
@@ -154,7 +161,7 @@ def run_backtest(config_path: str, cases_path: str, output_dir: str) -> dict:
             r90 = _future_return(full, as_of, item.price, 90)
             dd30 = _max_drawdown(full, as_of, item.price)
             protection = protections[symbol]
-            exit_action = _effective_exit_action(symbol, protection.action, risk.call)
+            exit_action = _effective_exit_action(symbol, protection.action, effective_broad_call)
             assets.append({"symbol": symbol, "price": round(item.price, 6), "signal": item.signal,
                            "readiness": readiness.status, "reason": readiness.reason,
                            "profit_protection_score": protection.score,
@@ -166,7 +173,8 @@ def run_backtest(config_path: str, cases_path: str, output_dir: str) -> dict:
                            "max_drawdown_30d": dd30, "entry_grade": _grade(readiness.status, r30, r90, dd30),
                            "exit_grade": _exit_grade(exit_action, r30, dd30)})
         results.append({"date": case.get("signal_date", str(case["date"])), "name": case["name"], "rationale": case["rationale"],
-                        "risk_on": score, "exit_risk": risk.score, "broad_exit_call": risk.call,
+                        "risk_on": score, "exit_risk": risk.score, "raw_exit_call": risk.call,
+                        "broad_exit_call": effective_broad_call, "exit_state_persisted": persisted,
                         "market_regime": positioning.market_regime,
                         "rotation": positioning.rotation_phase, "market_readiness": positioning.deployment_status,
                         "market_action": positioning.deployment_action, "assets": assets})
@@ -182,6 +190,7 @@ def run_backtest(config_path: str, cases_path: str, output_dir: str) -> dict:
                "early_exits": sum(asset["exit_grade"] == "EARLY EXIT" for asset in exit_decisions),
                "missed_exits": sum(asset["exit_grade"] == "MISSED EXIT" for asset in exit_decisions)}
     payload = {"methodology": "Signals use only candles before each as-of timestamp; later candles are used only for grading.",
+               "model": "candidate" if candidate else "baseline",
                "limitations": "Selected-event case study, not a statistically representative strategy backtest. Historical dominance and live intraday quotes are excluded.",
                "summary": summary, "results": results}
     out = Path(output_dir); out.mkdir(parents=True, exist_ok=True)
@@ -209,8 +218,9 @@ def main() -> int:
     parser.add_argument("--config", default="config.yaml")
     parser.add_argument("--cases", default="backtests/cases.yaml")
     parser.add_argument("--output", default="backtests/output")
+    parser.add_argument("--candidate", action="store_true")
     args = parser.parse_args()
-    payload = run_backtest(args.config, args.cases, args.output)
+    payload = run_backtest(args.config, args.cases, args.output, args.candidate)
     print(json.dumps(payload["summary"], indent=2))
     return 0
 

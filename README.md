@@ -112,3 +112,17 @@ The key must be View/read-only; never grant Trade or Transfer permissions.
 The workflow logs only the number of non-zero balances loaded; credential values and holdings are never logged.
 
 Portfolio report rows exclude balances valued at $5 or less and are ordered by current allocation, largest first.
+
+## Model B: MoQuant Adaptive
+
+Model A (the existing daily and weekly scanner) remains unchanged. A separate workflow,
+`MoQuant Adaptive - Model B`, trains an independent probabilistic challenger from completed
+daily candles and sends a separate email. It estimates the next 14-day probability of:
+
+- at least 10% upside;
+- outperforming BTC by at least 5%; and
+- suffering at least a 15% drawdown.
+
+Model B uses a time-ordered validation block and reports its diagnostic balanced accuracy.
+It is initially manual-only through **Actions → MoQuant Adaptive - Model B → Run workflow**.
+This deliberate shadow mode prevents the challenger from changing, delaying, or blocking Model A.

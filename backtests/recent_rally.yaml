@@ -1,0 +1,6 @@
+daily_sweeps:
+  - start: 2026-09-07
+    end: 2026-09-20
+    name: September 2026 live rally replay
+    focus: [BTC, ETH, SOL, FET, DOGE, TAO, POL, ATOM]
+    rationale: Audits whether the first completed daily closes of the current rally produced explicit staged-entry actions.

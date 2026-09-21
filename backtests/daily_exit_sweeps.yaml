@@ -1,0 +1,11 @@
+daily_sweeps:
+  - start: 2024-04-01
+    end: 2024-04-30
+    name: April 2024 exit sweep
+    focus: [BTC, ETH, FET, SOL, DOGE]
+    rationale: Tests every completed daily close after the March 2024 peak for timely profit-protection and exit warnings.
+  - start: 2025-01-01
+    end: 2025-01-31
+    name: January 2025 exit sweep
+    focus: [BTC, ETH, FET, SOL, DOGE]
+    rationale: Tests every completed daily close into the late-January 2025 market peak and subsequent decline.

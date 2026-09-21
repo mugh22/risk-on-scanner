@@ -2,6 +2,16 @@ name: MoQuant Adaptive - Model B
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/model-b.yml"
+      - "config/model_b.yaml"
+      - "requirements-model-b.txt"
+      - "src/model_b.py"
+      - "src/model_b_reporting.py"
+      - "src/model_b_scanner.py"
+      - "tests/test_model_b.py"
 
 concurrency:
   group: moquant-adaptive-model-b

@@ -13,6 +13,7 @@ from src.scanner import build_portfolio_rows, previous_closed_score
 from src.profit_protection import assess_profit_protection
 from src.positioning import assess_positioning
 from src.deployment import assess_asset_deployment
+from src.backtest import _grade
 from src.timeframes import completed_daily, completed_weekly_closes
 from src.weekly import holding_action, snapshot as weekly_snapshot, weekly_bars, weekly_market
 from src.scoring import CoinResult, regime, score_coin
@@ -232,6 +233,11 @@ def test_asset_dip_readiness_allows_strong_support_hold():
                 rel_7d=3, rel_30d=12, weekly_rel=2, daily_rel_confirmations=2)
     result = assess_asset_deployment(item, "EARLY DIP — PROBE ONLY", "EARLY SELECTIVE ROTATION", 10)
     assert result.status == "SUPPORT HOLDING — PARTIAL ENTRY"
+
+
+def test_backtest_grading_does_not_treat_do_not_add_as_an_add_call():
+    assert _grade("FAILED DIP — DO NOT ADD", -12, -5, -20) == "GOOD"
+    assert _grade("FAILED DIP — DO NOT ADD", 20, 35, -3) == "MISSED UPSIDE"
 
 
 def test_open_daily_and_current_week_are_excluded():

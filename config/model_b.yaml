@@ -1,0 +1,23 @@
+name: MoQuant Adaptive
+model_version: adaptive-logistic-v1
+symbols: [ETH, SOL, XRP, BNB, ADA, DOGE, AVAX, LINK, NEAR, ARB, OP, SUI, APT, INJ, RENDER, TAO, AAVE, UNI, ONDO, SEI]
+data:
+  quote: USDT
+  history_days: 1000
+  timeout_seconds: 20
+  retries: 3
+training:
+  horizon_days: 14
+  minimum_history_days: 90
+  upside_threshold_pct: 10
+  btc_outperformance_threshold_pct: 5
+  drawdown_threshold_pct: -15
+  validation_fraction: 0.20
+decision:
+  minimum_upside_probability: 0.60
+  minimum_outperformance_probability: 0.55
+  maximum_drawdown_probability: 0.30
+  protect_drawdown_probability: 0.45
+email:
+  enabled: true
+  subject_prefix: "MoQuant Adaptive — Model B"

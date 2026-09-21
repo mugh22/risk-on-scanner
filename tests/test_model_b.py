@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
+import pytest
 
-from src.model_b import AdaptivePrediction, FEATURES, ModelQuality, feature_frame, labeled_examples, predict, train_models
+from src.model_b import AdaptivePrediction, FEATURES, ModelQuality, current_market_features, feature_frame, labeled_examples, predict, train_models
 from src.model_b_reporting import render_model_b
 
 
@@ -16,7 +17,8 @@ def _frame(periods=180, start=100, step=.5):
 
 def test_feature_frame_is_point_in_time_and_complete():
     features = feature_frame(_frame(), _frame(start=200, step=.4))
-    assert set(FEATURES).issubset(features.columns)
+    market_features = {"market_breadth_ema20", "market_breadth_relative_7d", "market_median_relative_30d"}
+    assert (set(FEATURES) - market_features).issubset(features.columns)
     assert len(features) == 180
     assert features.iloc[-1].relative_30d > 0
     assert features.iloc[-1].low < features.iloc[-1].close
@@ -41,13 +43,17 @@ def test_training_and_prediction_are_deterministic():
     first, quality = train_models(dataset, .2)
     second, _ = train_models(dataset, .2)
     frame, btc = _frame(), _frame(start=200, step=.4)
+    market = current_market_features({"ALT": frame}, btc)
     a = predict("ALT", frame, btc, first, {"protect_drawdown_probability": .45,
                 "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
-                "maximum_drawdown_probability": .3})
+                "maximum_drawdown_probability": .3}, market)
     b = predict("ALT", frame, btc, second, {"protect_drawdown_probability": .45,
                 "minimum_upside_probability": .6, "minimum_outperformance_probability": .55,
-                "maximum_drawdown_probability": .3})
-    assert a == b
+                "maximum_drawdown_probability": .3}, market)
+    assert a.symbol == b.symbol and a.action == b.action and a.confidence == b.confidence
+    assert a.upside_probability == pytest.approx(b.upside_probability)
+    assert a.outperformance_probability == pytest.approx(b.outperformance_probability)
+    assert a.drawdown_probability == pytest.approx(b.drawdown_probability)
     assert quality.samples == rows
 
 
@@ -55,7 +61,10 @@ def test_model_b_report_is_explicitly_separate_and_probability_labeled():
     item = AdaptivePrediction("ALT", 123.45, .66, .58, .21, "CONSIDER STAGED ENTRY", "MEDIUM",
                               ("30D leadership vs BTC",))
     quality = ModelQuality(1000, 200, {"upside": .61, "outperform_btc": .59, "drawdown": .64},
-                           {"upside": .2, "outperform_btc": .21, "drawdown": .18})
+                           {"upside": .2, "outperform_btc": .21, "drawdown": .18},
+                           {"upside": .60, "outperform_btc": .58, "drawdown": .62},
+                           {"upside": "extra_trees", "outperform_btc": "logistic", "drawdown": "random_forest"},
+                           {"upside": .2, "outperform_btc": .25, "drawdown": .18})
     html, text = render_model_b([item], quality, [{"symbol": "ALT", "allocation": 100}], None,
                                 "2026-09-21 00:00 UTC", "test-v1")
     assert "Model A remains unchanged" in html

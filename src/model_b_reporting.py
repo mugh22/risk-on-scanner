@@ -52,6 +52,10 @@ def render_model_b(predictions: list[AdaptivePrediction], quality: ModelQuality,
     metrics = " · ".join(
         f"{name.replace('_', ' ')} BA {value:.2f}" for name, value in quality.balanced_accuracy.items() if value is not None
     ) or "Validation unavailable"
+    cv_metrics = " · ".join(
+        f"{name.replace('_', ' ')} {quality.selected_model[name]} CV {value:.2f}"
+        for name, value in quality.cross_validation_accuracy.items() if value is not None
+    )
     note = f"<p class='muted'>{escape(portfolio_note)}</p>" if portfolio_note else ""
     html = f"""<!doctype html><html><head><meta name='viewport' content='width=device-width'>
 <style>body{{font-family:Arial,sans-serif;max-width:820px;margin:auto;padding:16px;color:#111827}}h1{{font-size:25px}}h2{{font-size:20px;margin-top:28px}}.hero{{background:#172554;color:white;padding:18px;border-radius:12px}}.tag{{font-size:13px;color:#bfdbfe;text-transform:uppercase}}.cards{{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}}.card{{background:#eff6ff;padding:10px;border-radius:8px;min-width:130px}}table{{border-collapse:collapse;width:100%;font-size:13px}}th,td{{text-align:left;padding:8px 6px;border-bottom:1px solid #e5e7eb;vertical-align:top}}th{{background:#f3f4f6}}small,.muted{{color:#64748b}}.scroll{{overflow-x:auto}}.warning{{border-left:4px solid #d97706;padding:10px;background:#fffbeb}}</style></head>
@@ -61,13 +65,13 @@ def render_model_b(predictions: list[AdaptivePrediction], quality: ModelQuality,
 <div class='warning'><b>Probability, not certainty.</b> A 65% estimate still permits the opposite outcome. Position sizing and invalidation remain necessary.</div>
 <h2>Your portfolio</h2>{note}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>≥10% upside</th><th>Beat BTC</th><th>≥15% drawdown</th><th>Model B action</th></tr>{''.join(portfolio_body) or '<tr><td colspan="6">No supported portfolio assets.</td></tr>'}</table></div>
 <h2>Model B ranking</h2><div class='scroll'><table><tr><th>Asset</th><th>Close</th><th>≥10% upside</th><th>Beat BTC</th><th>≥15% drawdown</th><th>Confidence</th><th>Action / drivers</th></tr>{''.join(opportunity_body)}</table></div>
-<h2>Validation snapshot</h2><p>{escape(metrics)}</p><p class='muted'>Balanced accuracy is measured on the latest time-ordered validation block. This is an engineering diagnostic, not evidence of future profitability.</p>
+<h2>Validation snapshot</h2><p><b>Untouched holdout:</b> {escape(metrics)}</p><p><b>Model-selection CV:</b> {escape(cv_metrics)}</p><p class='muted'>Balanced accuracy is measured on the latest time-ordered validation block. This is an engineering diagnostic, not evidence of future profitability.</p>
 <p class='muted'>Generated {escape(generated_at)} · {escape(model_version)} · completed daily candles only · separate from MoQuant Sentinel</p></body></html>"""
     text = "\n".join([
         f"MOQUANT ADAPTIVE — MODEL B: {headline}",
         "Independent report; Model A remains unchanged.", "", "YOUR PORTFOLIO",
         *(text_portfolio or ["No supported portfolio assets."]), "", "MODEL B RANKING",
-        *text_opportunities, "", f"Training observations: {quality.samples:,}", metrics,
+        *text_opportunities, "", f"Training observations: {quality.samples:,}", metrics, cv_metrics,
         f"Generated {generated_at} · {model_version}",
     ])
     return html, text

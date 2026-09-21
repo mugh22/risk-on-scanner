@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import json
 
 from src.model_b import AdaptivePrediction, FEATURES, ModelQuality, current_market_features, feature_frame, labeled_examples, predict, train_models
 from src.model_b_reporting import render_model_b
@@ -132,3 +133,15 @@ def test_model_b_history_paginates_without_changing_model_a_client():
     assert len(result) == 2200
     assert client.client.calls == 3
     assert result.time.is_monotonic_increasing
+
+
+def test_quality_is_serializable_for_reproducible_experiment_artifacts():
+    quality = ModelQuality(100, 20, {name: .6 for name in ("upside", "outperform_btc", "drawdown")},
+                           {name: .2 for name in ("upside", "outperform_btc", "drawdown")},
+                           {name: .58 for name in ("upside", "outperform_btc", "drawdown")},
+                           {name: "logistic" for name in ("upside", "outperform_btc", "drawdown")},
+                           {name: .4 for name in ("upside", "outperform_btc", "drawdown")})
+    from dataclasses import asdict
+    payload = json.loads(json.dumps(asdict(quality)))
+    assert payload["samples"] == 100
+    assert payload["balanced_accuracy"]["upside"] == .6

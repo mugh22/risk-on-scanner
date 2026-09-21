@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import time
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -110,6 +112,12 @@ def run(config_path: str, report_dir: str, no_email: bool = False) -> int:
     output = Path(report_dir); output.mkdir(parents=True, exist_ok=True)
     (output / "report.html").write_text(html)
     (output / "report.txt").write_text(text)
+    # Preserve the exact point-in-time feature/label matrix used by this run.
+    # This makes experiments reproducible without repeatedly downloading market
+    # history and, importantly, lets candidate selection remain inside the
+    # development window while the final holdout stays untouched.
+    dataset.to_csv(output / "training-dataset.csv.gz", index=False, compression="gzip")
+    (output / "validation-metrics.json").write_text(json.dumps(asdict(quality), indent=2))
     entries = sum(item.action == "CONSIDER STAGED ENTRY" for item in predictions)
     defensive = sum(item.action == "PROTECT / DO NOT ADD" for item in predictions)
     subject = f"{cfg['email']['subject_prefix']}: {entries} Entry · {defensive} Protect"

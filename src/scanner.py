@@ -16,6 +16,7 @@ from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
 from .portfolio import fallback_spot_prices, load_portfolio
 from .profit_protection import assess_profit_protection, heat_call
+from .positioning import assess_positioning
 from .reporting import render, render_weekly
 from .scoring import CoinResult, regime, score_coin
 from .signals import classify, levels
@@ -149,6 +150,10 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     market_heat_score = round(float(pd.Series(heat_values).quantile(.75)), 1) if heat_values else 0.0
     market_heat_level, market_heat_action = heat_call(market_heat_score)
     market_heat = {"score": market_heat_score, "level": market_heat_level, "action": market_heat_action}
+    positioning = assess_positioning(
+        score, context, btc, coins, exit_risk, market_heat, dominance,
+        previous.get("dominance"),
+    )
     raw_rows = []
     fallback_prices = fallback_spot_prices([holding.symbol for holding in holdings if holding.symbol not in by_symbol])
     for holding in holdings:
@@ -179,7 +184,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
             if item: row["weekly_action"] = holding_action(item, row["allocation"], exit_risk.score)
         html,text=render_weekly(weekly_context,weekly_items,portfolio_rows,portfolio_note,exit_risk,dominance,quote_time,quote_source)
     else:
-        html,text=render(score,prior_score,coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,quote_time,quote_source)
+        html,text=render(score,prior_score,coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,positioning,quote_time,quote_source)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
     if report_mode == "weekly": subject=f"Weekly Crypto Outlook: {weekly_context['posture']} | 2–6 Week Window"

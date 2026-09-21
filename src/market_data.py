@@ -26,16 +26,19 @@ class SpotSnapshot:
 
 
 class BinanceClient:
-    def __init__(self, timeout: float = 20, retries: int = 3) -> None:
-        self.client = httpx.Client(timeout=timeout, headers={"User-Agent": "risk-on-scanner/1.0"}, trust_env=False)
+    def __init__(self, timeout: float = 20, retries: int = 3, trust_env: bool = False) -> None:
+        self.client = httpx.Client(timeout=timeout, headers={"User-Agent": "risk-on-scanner/1.0"}, trust_env=trust_env)
         self.retries = retries
 
-    def daily(self, pair: str, limit: int = 240) -> pd.DataFrame:
+    def daily(self, pair: str, limit: int = 240, end_time: datetime | None = None) -> pd.DataFrame:
         error: Exception | None = None
         for base in BASES:
             for attempt in range(self.retries):
                 try:
-                    response = self.client.get(f"{base}/api/v3/klines", params={"symbol": pair, "interval": "1d", "limit": limit})
+                    params = {"symbol": pair, "interval": "1d", "limit": limit}
+                    if end_time is not None:
+                        params["endTime"] = int(end_time.timestamp() * 1000)
+                    response = self.client.get(f"{base}/api/v3/klines", params=params)
                     if response.status_code in (418, 429):
                         time.sleep(2 ** attempt)
                         continue
@@ -48,7 +51,7 @@ class BinanceClient:
                         frame[col] = pd.to_numeric(frame[col])
                     frame["time"] = pd.to_datetime(frame["time"], unit="ms", utc=True)
                     LOG.info("Loaded %s from %s", pair, base)
-                    frame = completed_daily(frame[["time", "open", "high", "low", "close", "volume"]])
+                    frame = completed_daily(frame[["time", "open", "high", "low", "close", "volume"]], end_time)
                     if frame.empty:
                         raise ValueError(f"No completed candles for {pair}")
                     return frame

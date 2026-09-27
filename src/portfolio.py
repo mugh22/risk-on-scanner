@@ -17,6 +17,7 @@ class Holding:
     quantity: float
     average_cost: float | None = None
     target_allocation: float | None = None
+    available_quantity: float | None = None
 
 
 def _number(value: str) -> float | None:

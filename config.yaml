@@ -28,3 +28,12 @@ signals:
 email:
   enabled: true
   subject_prefix: Crypto Risk-On
+# Advisory sizing only. Percentages refer to current verified available cash.
+portfolio_risk:
+  cash_per_asset_pct: 10
+  max_cash_per_report_pct: 30
+  minimum_reserve_pct: 15
+  max_asset_allocation_pct: 20
+  max_portfolio_risk_per_asset_pct: 0.5
+  max_portfolio_risk_per_report_pct: 1
+  min_target2_reward_risk: 2

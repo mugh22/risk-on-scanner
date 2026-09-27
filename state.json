@@ -1,154 +1,154 @@
 {
   "cycle_stops": {
     "ETH": {
-      "stop": 1384.1820863482394,
-      "candidate": 1384.1820863482394,
+      "stop": 2302.7945,
+      "candidate": 2302.7945,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.058978+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.902460+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SOL": {
-      "stop": 64.42539149899591,
-      "candidate": 64.42539149899591,
+      "stop": 105.41699999999999,
+      "candidate": 105.41699999999999,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.062383+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.906593+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "XRP": {
-      "stop": 0.8937119657407655,
-      "candidate": 0.8937119657407655,
+      "stop": 1.348423823197601,
+      "candidate": 1.3047499999999999,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.065636+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.910604+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ADA": {
-      "stop": 0.15103688715394914,
-      "candidate": 0.15103688715394914,
+      "stop": 0.22479586733307239,
+      "candidate": 0.21751500000000001,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.072214+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.918676+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "DOGE": {
-      "stop": 0.061439576803404644,
-      "candidate": 0.061439576803404644,
+      "stop": 0.08586868320362573,
+      "candidate": 0.0830875,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.075436+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.922675+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "LINK": {
-      "stop": 6.2398546080110835,
-      "candidate": 6.2398546080110835,
+      "stop": 12.559228273782477,
+      "candidate": 12.15245,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.081819+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.930681+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "NEAR": {
-      "stop": 1.2871977556169623,
-      "candidate": 1.2871977556169623,
+      "stop": 4.567071958830181,
+      "candidate": 4.41915,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.085006+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.934730+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ARB": {
-      "stop": 0.0552386474365387,
-      "candidate": 0.0552386474365387,
+      "stop": 0.20078248635437554,
+      "candidate": 0.19363,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.088228+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.938714+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "OP": {
-      "stop": 0.06749053307511589,
-      "candidate": 0.06749053307511589,
+      "stop": 0.12308000000000001,
+      "candidate": 0.12308000000000001,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.091382+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.942684+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SUI": {
-      "stop": 0.5506901358680023,
-      "candidate": 0.5506901358680023,
+      "stop": 1.059015,
+      "candidate": 1.059015,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.095174+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.946649+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "APT": {
-      "stop": 0.4317662795922345,
-      "candidate": 0.4317662795922345,
+      "stop": 0.72505,
+      "candidate": 0.72505,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.099264+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.950628+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "INJ": {
-      "stop": 3.3917346992800272,
-      "candidate": 3.3917346992800272,
+      "stop": 6.8747653683025565,
+      "candidate": 6.6521,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.104343+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.954640+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "TAO": {
-      "stop": 160.6387189794674,
-      "candidate": 160.6387189794674,
+      "stop": 289.010708685349,
+      "candidate": 279.65,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.113942+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.962570+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ONDO": {
-      "stop": 0.28605961740942915,
-      "candidate": 0.28605961740942915,
+      "stop": 0.47875634113530463,
+      "candidate": 0.46325,
       "previous_stop": null,
-      "status": "NEW \u2014 NOT PLACED",
+      "status": "RISK CAP \u2014 REVIEW LEVEL",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.127327+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.974560+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "1INCH": {
-      "stop": 0.05877761835597787,
-      "candidate": 0.05877761835597787,
+      "stop": 0.08789,
+      "candidate": 0.08789,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.139948+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.982498+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "AERO": {
       "stop": null,
@@ -157,138 +157,138 @@
       "status": "INSUFFICIENT WEEKLY DATA",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.144618+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.986466+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ARKM": {
-      "stop": 0.0740219335807479,
-      "candidate": 0.0740219335807479,
+      "stop": 0.119935,
+      "candidate": 0.119935,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.147565+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.989661+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ATOM": {
-      "stop": 1.0847187473072815,
-      "candidate": 1.0847187473072815,
+      "stop": 1.5997,
+      "candidate": 1.5997,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.151001+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.993637+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "AUCTION": {
-      "stop": 2.1957147051763717,
-      "candidate": 2.1957147051763717,
+      "stop": 3.3082,
+      "candidate": 3.3082,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.154295+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:52.997603+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "BONK": {
-      "stop": 1.7288475877416618e-06,
-      "candidate": 1.7288475877416618e-06,
+      "stop": 3.145e-06,
+      "candidate": 3.145e-06,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.157555+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.001568+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "CRV": {
-      "stop": 0.17226516052239504,
-      "candidate": 0.17226516052239504,
+      "stop": 0.297415,
+      "candidate": 0.297415,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.160814+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.005545+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "DOT": {
-      "stop": 0.6286606064510591,
-      "candidate": 0.6286606064510591,
+      "stop": 1.0599500000000002,
+      "candidate": 1.0599500000000002,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.164050+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.009528+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "FET": {
-      "stop": 0.1006467898528619,
-      "candidate": 0.1006467898528619,
+      "stop": 0.208165,
+      "candidate": 0.208165,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.167275+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.013523+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "FIL": {
-      "stop": 0.5224461846922064,
-      "candidate": 0.5224461846922064,
+      "stop": 0.967555,
+      "candidate": 0.967555,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.170499+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.017571+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "JASMY": {
-      "stop": 0.0029712276203986026,
-      "candidate": 0.0029712276203986026,
+      "stop": 0.00425,
+      "candidate": 0.00425,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.173714+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.021527+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "MANA": {
-      "stop": 0.056036200098981165,
-      "candidate": 0.056036200098981165,
+      "stop": 0.07819999999999999,
+      "candidate": 0.07819999999999999,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.177134+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.025543+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "OCEAN": {
-      "stop": 0.37652584697862107,
-      "candidate": 0.37652584697862107,
+      "stop": 0.520455,
+      "candidate": 0.520455,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2024-07-01 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.180339+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.029520+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "PEPE": {
-      "stop": 2.17546893349071e-06,
-      "candidate": 2.17546893349071e-06,
+      "stop": 3.74e-06,
+      "candidate": 3.74e-06,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.183545+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.033485+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "POL": {
-      "stop": 0.06252067072458435,
-      "candidate": 0.06252067072458435,
+      "stop": 0.102221,
+      "candidate": 0.102221,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.186750+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.037466+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "PYR": {
       "stop": 0.21390068444953372,
@@ -297,28 +297,28 @@
       "status": "BREACHED \u2014 REVIEW / NO ADD",
       "breached": true,
       "week": "2026-08-17 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.189941+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.041623+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "RNDR": {
-      "stop": 4.789482821138207,
-      "candidate": 4.789482821138207,
+      "stop": 5.9755,
+      "candidate": 5.9755,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2024-07-22 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.193167+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.045641+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ROSE": {
-      "stop": 0.004257292105289344,
-      "candidate": 0.004257292105289344,
+      "stop": 0.007505499999999999,
+      "candidate": 0.007505499999999999,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.196718+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.049746+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SAND": {
       "stop": 0.03987113741076351,
@@ -327,36 +327,35 @@
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.200221+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.053755+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SPELL": {
-      "stop": 6.361243096585305e-05,
-      "candidate": 6.361243096585305e-05,
+      "stop": 9.0185e-05,
+      "candidate": 9.0185e-05,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.203771+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.057725+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "STX": {
-      "stop": 0.09369780990594795,
-      "candidate": 0.09369780990594795,
+      "stop": 0.296735,
+      "candidate": 0.296735,
       "previous_stop": null,
       "status": "NEW \u2014 NOT PLACED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T10:53:30.207358+00:00",
-      "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"
+      "checked_at": "2026-09-27T11:16:53.061705+00:00",
+      "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     }
   },
   "cash_deployment": {},
   "model_version": "closed-candle-v1",
   "risk_score": 85.9,
-  "exit_risk": 4.0,
+  "exit_risk": 1.5,
   "exit_risk_history": [
-    1.5,
     1.5,
     2.5,
     1.5,
@@ -375,14 +374,15 @@
     6.0,
     4.9,
     1.5,
-    4.0
+    4.0,
+    1.5
   ],
   "exit_risk_components": {
     "Relative strength": 0,
     "Breadth deterioration": 0,
     "Exhaustion / distribution": 0,
     "BTC trend stress": 0,
-    "Capital concentration": 40
+    "Capital concentration": 15
   },
   "exit_risk_metrics": {
     "median_rel7": 7.57,
@@ -398,20 +398,20 @@
     "extended_pct": 26.8,
     "failed_high_pct": 0.0,
     "weekly_red_pct": 2.4,
-    "concentration": 79.08,
-    "stable_btc_ratio": 0.1817
+    "concentration": 79.1,
+    "stable_btc_ratio": 0.1815
   },
   "exit_policy_call": "HOLD / SELECTIVE ADDS",
   "exit_state_persisted": false,
   "dominance": {
-    "btc_d": 58.741,
-    "eth_d": 11.399,
-    "usdt_d": 6.343,
-    "usdc_d": 2.595,
-    "stable_d": 10.674,
-    "concentration": 79.079,
-    "stable_btc_ratio": 0.18171,
-    "alt_ex_stable_btc": 0.3266
+    "btc_d": 58.768,
+    "eth_d": 11.398,
+    "usdt_d": 6.34,
+    "usdc_d": 2.594,
+    "stable_d": 10.668,
+    "concentration": 79.099,
+    "stable_btc_ratio": 0.18153,
+    "alt_ex_stable_btc": 0.3261
   },
   "signals": {
     "ETH": "WATCH",

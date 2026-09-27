@@ -2,142 +2,142 @@
   "cycle_stops": {
     "ETH": {
       "stop": 2302.7945,
-      "candidate": 2306.9339999999997,
+      "candidate": 2309.1355,
       "previous_stop": 2302.7945,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.212992+00:00",
+      "checked_at": "2026-09-27T12:16:19.814184+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SOL": {
       "stop": 105.41699999999999,
-      "candidate": 105.604,
+      "candidate": 105.6125,
       "previous_stop": 105.41699999999999,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.223242+00:00",
+      "checked_at": "2026-09-27T12:16:19.817823+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "XRP": {
       "stop": 1.4052129976029348,
-      "candidate": 1.30985,
-      "previous_stop": 1.348423823197601,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 1.31053,
+      "previous_stop": 1.4052129976029348,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.233647+00:00",
+      "checked_at": "2026-09-27T12:16:19.821296+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ADA": {
       "stop": 0.23441056530402998,
-      "candidate": 0.21879,
-      "previous_stop": 0.22479586733307239,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 0.21870499999999998,
+      "previous_stop": 0.23441056530402998,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.254048+00:00",
+      "checked_at": "2026-09-27T12:16:19.828169+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "DOGE": {
       "stop": 0.08951393666687829,
-      "candidate": 0.0834955,
-      "previous_stop": 0.08586868320362573,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 0.083589,
+      "previous_stop": 0.08951393666687829,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.262769+00:00",
+      "checked_at": "2026-09-27T12:16:19.831644+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "LINK": {
       "stop": 13.083184046059372,
-      "candidate": 12.185599999999999,
-      "previous_stop": 12.559228273782477,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 12.21025,
+      "previous_stop": 13.083184046059372,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.280918+00:00",
+      "checked_at": "2026-09-27T12:16:19.838586+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "NEAR": {
       "stop": 4.754602052317765,
-      "candidate": 4.42255,
-      "previous_stop": 4.567071958830181,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 4.4234,
+      "previous_stop": 4.754602052317765,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.290062+00:00",
+      "checked_at": "2026-09-27T12:16:19.842066+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ARB": {
       "stop": 0.20839586465213802,
-      "candidate": 0.19261,
-      "previous_stop": 0.20078248635437554,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 0.192525,
+      "previous_stop": 0.20839586465213802,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.297396+00:00",
+      "checked_at": "2026-09-27T12:16:19.845533+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "OP": {
       "stop": 0.12308000000000001,
-      "candidate": 0.12324999999999998,
+      "candidate": 0.123165,
       "previous_stop": 0.12308000000000001,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.304764+00:00",
+      "checked_at": "2026-09-27T12:16:19.849052+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SUI": {
       "stop": 1.059015,
-      "candidate": 1.068875,
+      "candidate": 1.07134,
       "previous_stop": 1.059015,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.312055+00:00",
+      "checked_at": "2026-09-27T12:16:19.852564+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "APT": {
       "stop": 0.72505,
-      "candidate": 0.727345,
+      "candidate": 0.726835,
       "previous_stop": 0.72505,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.319212+00:00",
+      "checked_at": "2026-09-27T12:16:19.856036+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "INJ": {
       "stop": 7.158520665690086,
-      "candidate": 6.661449999999999,
-      "previous_stop": 6.8747653683025565,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 6.6606000000000005,
+      "previous_stop": 7.158520665690086,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.326408+00:00",
+      "checked_at": "2026-09-27T12:16:19.859562+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "TAO": {
       "stop": 302.9559424965278,
-      "candidate": 285.855,
-      "previous_stop": 289.010708685349,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 284.83500000000004,
+      "previous_stop": 302.9559424965278,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.340516+00:00",
+      "checked_at": "2026-09-27T12:16:19.866371+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ONDO": {
       "stop": 0.4983500447493681,
-      "candidate": 0.46342,
-      "previous_stop": 0.47875634113530463,
-      "status": "RISK CAP \u2014 REVIEW LEVEL",
+      "candidate": 0.462145,
+      "previous_stop": 0.4983500447493681,
+      "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.361576+00:00",
+      "checked_at": "2026-09-27T12:16:19.876587+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "1INCH": {
@@ -147,7 +147,7 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.375647+00:00",
+      "checked_at": "2026-09-27T12:16:19.883433+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "AERO": {
@@ -157,7 +157,7 @@
       "status": "INSUFFICIENT WEEKLY DATA",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.383235+00:00",
+      "checked_at": "2026-09-27T12:16:19.886958+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ARKM": {
@@ -167,37 +167,37 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.388723+00:00",
+      "checked_at": "2026-09-27T12:16:19.889596+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ATOM": {
       "stop": 1.5997,
-      "candidate": 1.60395,
+      "candidate": 1.6090499999999999,
       "previous_stop": 1.5997,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.395952+00:00",
+      "checked_at": "2026-09-27T12:16:19.893094+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "AUCTION": {
       "stop": 3.3082,
-      "candidate": 3.3031,
+      "candidate": 3.3013999999999997,
       "previous_stop": 3.3082,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.403143+00:00",
+      "checked_at": "2026-09-27T12:16:19.896606+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "BONK": {
       "stop": 3.145e-06,
-      "candidate": 3.145e-06,
+      "candidate": 3.1365e-06,
       "previous_stop": 3.145e-06,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.411927+00:00",
+      "checked_at": "2026-09-27T12:16:19.900886+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "CRV": {
@@ -207,57 +207,57 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.419240+00:00",
+      "checked_at": "2026-09-27T12:16:19.904426+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "DOT": {
       "stop": 1.0599500000000002,
-      "candidate": 1.06165,
+      "candidate": 1.0633499999999998,
       "previous_stop": 1.0599500000000002,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.426527+00:00",
+      "checked_at": "2026-09-27T12:16:19.907959+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "FET": {
       "stop": 0.208165,
-      "candidate": 0.20799499999999999,
+      "candidate": 0.20774,
       "previous_stop": 0.208165,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.433838+00:00",
+      "checked_at": "2026-09-27T12:16:19.911445+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "FIL": {
       "stop": 0.967555,
-      "candidate": 0.97138,
+      "candidate": 0.971635,
       "previous_stop": 0.967555,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.441024+00:00",
+      "checked_at": "2026-09-27T12:16:19.914957+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "JASMY": {
       "stop": 0.00425,
-      "candidate": 0.004258499999999999,
+      "candidate": 0.004267,
       "previous_stop": 0.00425,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.448189+00:00",
+      "checked_at": "2026-09-27T12:16:19.918451+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "MANA": {
       "stop": 0.07819999999999999,
-      "candidate": 0.07854,
+      "candidate": 0.078455,
       "previous_stop": 0.07819999999999999,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.455332+00:00",
+      "checked_at": "2026-09-27T12:16:19.921962+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "OCEAN": {
@@ -267,7 +267,7 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2024-07-01 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.462466+00:00",
+      "checked_at": "2026-09-27T12:16:19.925467+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "PEPE": {
@@ -277,17 +277,17 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.469734+00:00",
+      "checked_at": "2026-09-27T12:16:19.928987+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "POL": {
       "stop": 0.102221,
-      "candidate": 0.10250999999999999,
+      "candidate": 0.1025355,
       "previous_stop": 0.102221,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.476896+00:00",
+      "checked_at": "2026-09-27T12:16:19.932520+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "PYR": {
@@ -297,7 +297,7 @@
       "status": "BREACHED \u2014 REVIEW / NO ADD",
       "breached": true,
       "week": "2026-08-17 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.484079+00:00",
+      "checked_at": "2026-09-27T12:16:19.936014+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "RNDR": {
@@ -307,17 +307,17 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2024-07-22 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.491287+00:00",
+      "checked_at": "2026-09-27T12:16:19.939523+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "ROSE": {
       "stop": 0.007505499999999999,
-      "candidate": 0.007505499999999999,
+      "candidate": 0.0075225,
       "previous_stop": 0.007505499999999999,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.498595+00:00",
+      "checked_at": "2026-09-27T12:16:19.943023+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SAND": {
@@ -327,36 +327,35 @@
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.505795+00:00",
+      "checked_at": "2026-09-27T12:16:19.946528+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "SPELL": {
       "stop": 9.0185e-05,
-      "candidate": 8.9335e-05,
+      "candidate": 8.925e-05,
       "previous_stop": 9.0185e-05,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.513005+00:00",
+      "checked_at": "2026-09-27T12:16:19.949999+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     },
     "STX": {
       "stop": 0.296735,
-      "candidate": 0.29699,
+      "candidate": 0.29733,
       "previous_stop": 0.296735,
       "status": "UNCHANGED",
       "breached": false,
       "week": "2026-09-14 00:00:00+00:00",
-      "checked_at": "2026-09-27T12:09:46.520198+00:00",
+      "checked_at": "2026-09-27T12:16:19.953500+00:00",
       "method": "Weekly structure with a 15% maximum price-risk cap; advisory"
     }
   },
   "cash_deployment": {},
   "model_version": "closed-candle-v1",
   "risk_score": 85.9,
-  "exit_risk": 2.5,
+  "exit_risk": 1.5,
   "exit_risk_history": [
-    2.5,
     1.5,
     2.5,
     1.5,
@@ -375,14 +374,15 @@
     1.5,
     4.0,
     1.5,
-    2.5
+    2.5,
+    1.5
   ],
   "exit_risk_components": {
     "Relative strength": 0,
     "Breadth deterioration": 0,
     "Exhaustion / distribution": 0,
     "BTC trend stress": 0,
-    "Capital concentration": 25
+    "Capital concentration": 15
   },
   "exit_risk_metrics": {
     "median_rel7": 7.57,
@@ -398,20 +398,20 @@
     "extended_pct": 26.8,
     "failed_high_pct": 0.0,
     "weekly_red_pct": 2.4,
-    "concentration": 79.1,
-    "stable_btc_ratio": 0.1817
+    "concentration": 79.08,
+    "stable_btc_ratio": 0.1815
   },
   "exit_policy_call": "HOLD / SELECTIVE ADDS",
   "exit_state_persisted": false,
   "dominance": {
-    "btc_d": 58.759,
-    "eth_d": 11.398,
-    "usdt_d": 6.345,
-    "usdc_d": 2.596,
-    "stable_d": 10.676,
-    "concentration": 79.098,
-    "stable_btc_ratio": 0.1817,
-    "alt_ex_stable_btc": 0.3262
+    "btc_d": 58.749,
+    "eth_d": 11.404,
+    "usdt_d": 6.337,
+    "usdc_d": 2.593,
+    "stable_d": 10.664,
+    "concentration": 79.083,
+    "stable_btc_ratio": 0.18152,
+    "alt_ex_stable_btc": 0.3265
   },
   "signals": {
     "ETH": "WATCH",

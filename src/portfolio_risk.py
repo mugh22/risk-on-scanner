@@ -32,6 +32,10 @@ def weekly_stop(frame, previous=None, live=None, now=None):
         candidate = support - .5 * volatility
         if not math.isfinite(candidate) or candidate <= 0:
             candidate = None
+    # Migration: the original 12-week-low rule produced unusably distant stops.
+    # Recalculate those once, then retain the new risk-capped level.
+    if old.get("method", "").startswith("Confirmed weekly swing low"):
+        old = {}
     stop = old.get("stop")
     status = "UNCHANGED" if stop else "INSUFFICIENT WEEKLY DATA"
     # Check the old level before raising it. Completed daily bars after the last
@@ -43,6 +47,10 @@ def weekly_stop(frame, previous=None, live=None, now=None):
         breached = breached or bool(len(subsequent) and subsequent.low.min() <= stop)
     if stop and live is not None and live <= stop:
         breached = True
+    if live and candidate is not None:
+        # Structural support may be far away. Cap the suggested downside at
+        # 15% of today's price, while keeping a tighter structural level.
+        candidate = max(candidate, live * .85)
     if not breached and candidate is not None and week != old.get("week"):
         if stop is None:
             stop, status = candidate, "NEW — NOT PLACED"
@@ -57,7 +65,7 @@ def weekly_stop(frame, previous=None, live=None, now=None):
     return {"stop": stop, "candidate": candidate, "previous_stop": old.get("stop"),
             "status": status, "breached": breached, "week": week,
             "checked_at": now.isoformat(),
-            "method": "Confirmed weekly swing low (2 weeks each side), or 12-week low, minus 0.5 weekly ATR(14)"}
+            "method": "Weekly structure with a 15% maximum price-risk cap; advisory"}
 
 
 def build_risk_plan(holdings, rows, frames, coins, previous, source_note, exit_score,
@@ -72,8 +80,25 @@ def build_risk_plan(holdings, rows, frames, coins, previous, source_note, exit_s
             stops[coin.symbol] = weekly_stop(frames[coin.symbol], states.get(coin.symbol), coin.live_price, now)
             if coin.symbol in current:
                 states[coin.symbol] = stops[coin.symbol]
+    total = sum(r["value"] for r in rows)
+    # Cap modeled loss across the whole priced portfolio at 6% and any one
+    # holding at 2% of that portfolio. A tight cap is marked for review.
+    proposed = {}
     for row in rows:
         stop = stops.get(row["symbol"], {})
+        if row["symbol"] not in CASH and stop.get("stop") and row["price"] > stop["stop"] and total > 0:
+            distance = min(1-stop["stop"]/row["price"], .02*total/row["value"])
+            proposed[row["symbol"]] = distance * row["value"]
+    scale = min(1., .06*total/sum(proposed.values())) if proposed else 1.
+    for row in rows:
+        stop = stops.get(row["symbol"], {})
+        if row["symbol"] in proposed and not stop.get("breached"):
+            distance = proposed[row["symbol"]] / row["value"] * scale
+            adjusted = row["price"] * (1-distance)
+            if adjusted > stop["stop"]:
+                stop["stop"] = adjusted
+                stop["status"] = "RISK CAP — REVIEW LEVEL"
+                states[row["symbol"]] = stop
         row["cycle_stop"] = stop.get("stop")
         row["stop_status"] = "CASH — NOT APPLICABLE" if row["symbol"] in CASH else stop.get("status", "NO WEEKLY DATA")
         row["stop_distance"] = 100*(1-row["cycle_stop"]/row["price"]) if row["cycle_stop"] else None
@@ -81,7 +106,6 @@ def build_risk_plan(holdings, rows, frames, coins, previous, source_note, exit_s
         if stop.get("breached"):
             row["action"] = "STOP BREACHED — REVIEW POSITION"
     cash = sum(h.available_quantity for h in holdings if h.symbol in CASH and h.available_quantity is not None)
-    total = sum(r["value"] for r in rows)
     values = {r["symbol"]: r["value"] for r in rows}
     live_source = bool(source_note and source_note.startswith("Live quantities from Coinbase"))
     covered = {r["symbol"] for r in rows} | {c.symbol for c in coins} | CASH
@@ -91,8 +115,7 @@ def build_risk_plan(holdings, rows, frames, coins, previous, source_note, exit_s
         plan["note"] = "DEPLOY 0% — live Coinbase available cash could not be verified."
         return plan, states
     if missing:
-        plan["note"] = "DEPLOY 0% — unpriced balances prevent safe portfolio sizing: " + ", ".join(missing)
-        return plan, states
+        plan["unpriced"] = missing
     if exit_score >= 60 or cash <= 5 or total <= 0:
         plan["note"] = "DEPLOY 0% — defensive market or insufficient available cash."
         return plan, states
@@ -132,5 +155,6 @@ def build_risk_plan(holdings, rows, frames, coins, previous, source_note, exit_s
     plan["deployed"] = deployed
     plan["note"] = (f"Suggested ${deployed:,.2f}; retain ${cash-deployed:,.2f} available cash. " if deployed else
                     "DEPLOY 0% — no BUY meets entry, weekly-stop reward/risk, reserve and concentration limits. ")
-    plan["note"] += "Percentages use current available USD + USDC + USDT (stablecoins estimated at $1), excluding holds. Proposals are alternatives for this snapshot, not cumulative instructions across reports; no orders are placed."
+    if missing:
+        plan["note"] += " Other Coinbase balances excluded from valuation: " + ", ".join(missing) + "."
     return plan, states

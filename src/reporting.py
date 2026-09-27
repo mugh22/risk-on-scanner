@@ -75,11 +75,11 @@ def _portfolio_html(portfolio_rows: list[dict], portfolio_note: str | None) -> s
     rows = "".join(
         f"<tr><td><b>{escape(row['symbol'])}</b></td><td>{row['quantity']:,.6g}</td><td>${price_text(row['price'])}</td>"
         f"<td>${row['value']:,.2f}</td><td>{row['allocation']:.1f}%</td><td>{row['pnl']}</td>"
-        f"<td>{escape(row['signal'])}</td><td><b>{row['heat']:.0f}</b></td><td><b>{escape(row.get('deployment','NOT SCORED'))}</b></td><td>{escape(row['action'])}</td></tr>"
+        f"<td>{escape(row['signal'])}</td><td><b>{row['heat']:.0f}</b></td><td><b>{escape(row.get('deployment','NOT SCORED'))}</b></td><td>{_stop_cell(row)}</td><td>{escape(row['action'])}</td></tr>"
         for row in portfolio_rows
     )
     source = f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ""
-    return f"{cards}{source}<div class='scroll detail-table'><table><tr><th>Asset</th><th>Qty</th><th>Price</th><th>Value</th><th>Weight</th><th>P/L</th><th>Signal</th><th>Heat</th><th>Dip readiness</th><th>Action</th></tr>{rows}</table></div>"
+    return f"{cards}{source}<div class='scroll detail-table'><table><tr><th>Asset</th><th>Qty</th><th>Price</th><th>Value</th><th>Weight</th><th>P/L</th><th>Signal</th><th>Heat</th><th>Dip readiness</th><th>Cycle stop</th><th>Action</th></tr>{rows}</table></div>"
 
 
 def render(
@@ -156,7 +156,7 @@ def render_weekly(
         if not item:
             portfolio.append(
                 f"<tr><td><b>{escape(row['symbol'])}</b></td><td>{row['allocation']:.1f}%</td>"
-                f"<td colspan='7'>Weekly candles unavailable — {escape(row.get('action','NOT SCORED'))}</td></tr>"
+                f"<td colspan='7'>Weekly candles unavailable — {escape(row.get('action','NOT SCORED'))}</td><td>{_stop_cell(row)}</td></tr>"
             )
             continue
         portfolio.append(
@@ -164,7 +164,7 @@ def render_weekly(
             f"<td><b>{escape(item.trend)}</b></td><td>{item.return_4w:+.1f}%</td><td>{item.return_12w:+.1f}%</td>"
             f"<td>{item.relative_4w:+.1f}%</td><td>{item.relative_12w:+.1f}%</td><td>{item.rsi:.0f}</td>"
             f"<td><b>{escape(row.get('weekly_action','HOLD'))}</b></td>"
-            f"<td><b>{escape(row.get('weekly_entry_action','WATCH'))}</b></td></tr>"
+            f"<td><b>{escape(row.get('weekly_entry_action','WATCH'))}</b></td><td>{_stop_cell(row)}</td></tr>"
         )
     ranked = sorted((item for symbol, item in snapshots.items() if symbol != "BTC"), key=lambda x: x.relative_4w, reverse=True)
     weekly_exit_score = max(exit_risk.score, 60) if exit_risk.call.startswith(("REDUCE", "EXIT")) else exit_risk.score
@@ -193,7 +193,7 @@ def render_weekly(
     html = f"""<!doctype html><html><head><meta name='viewport' content='width=device-width'><style>{css}</style></head><body>
 <div class='hero' style='background:{color}'><small>WEEKLY CRYPTO OUTLOOK · COMPLETED CANDLES ONLY</small><br><b>{escape(market['posture'])} — {market['score']:.0f}/100</b><div class='sub'>{escape(market['horizon'])}</div></div>
 <h2>What to do this week</h2><div class='call'><b>Base plan:</b> {escape(base)}</div><div class='call'><b>Portfolio concentration:</b> largest position {concentration:.1f}% · broad exit risk {exit_risk.score:.0f}/100 ({escape(exit_risk.level)})</div>
-<h2>Your portfolio — weekly decisions</h2>{f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ''}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Holder action</th><th>New-capital action</th></tr>{''.join(portfolio)}</table></div>
+<h2>Your portfolio — weekly decisions</h2>{f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ''}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Holder action</th><th>New-capital action</th><th>Cycle stop</th></tr>{''.join(portfolio)}</table></div>
 {_risk_plan_html(portfolio_rows, risk_plan)}
 <h2>Multi-week market structure</h2><div class='grid'><div class='metric'><b>{market['above4']:.0f}%</b><small>Above 4W EMA</small></div><div class='metric'><b>{market['above10']:.0f}%</b><small>Above 10W EMA</small></div><div class='metric'><b>{market['rel4']:.0f}%</b><small>Beat BTC over 4W</small></div><div class='metric'><b>{market['rel12']:.0f}%</b><small>Beat BTC over 12W</small></div><div class='metric'><b>{market['distribution']:.0f}%</b><small>Weekly weakening</small></div></div><p><b>BTC weekly:</b> {escape(btc_line)}</p><p><b>Rotation:</b> BTC.D {dominance.get('btc_d',0):.1f}% · ETH.D {dominance.get('eth_d',0):.1f}% · Stablecoin dominance {dominance.get('stable_d',0):.1f}%</p>
 <h2>2–6 week scenario map</h2><div class='scenario'><b>Base:</b> {escape(base)}</div><div class='scenario'><b>Bull confirmation:</b> {escape(bull)}</div><div class='scenario'><b>Bear / protection trigger:</b> {escape(bear)}</div>
@@ -213,14 +213,21 @@ def _deployment_label(symbol, plan):
 def _risk_plan_text(rows, plan):
     if plan is None:
         return ""
-    stops = "\n".join(f"{r['symbol']}: cycle stop ${price_text(r.get('cycle_stop'))} | {r.get('stop_status','N/A')}" for r in rows)
     allocations = "\n".join(f"{symbol}: DEPLOY {a['cash_pct']:.1f}% of available cash (${a['usd']:,.2f}); estimated risk to weekly stop ${a['risk_usd']:,.2f}; target2 reward/risk {a['reward_risk']:.1f}" for symbol,a in plan['allocations'].items())
-    return f"CYCLE STOP PLAN — ADVISORY, NOT ACTIVE ORDERS\n{stops}\nWeekly support minus 0.5 weekly ATR; retain prior stop unless confirmed support raises it at least 5%. Stops never automatically loosen. Trigger is price touching the level, not a weekly close. Stops may slip; stop-limit orders may not fill.\nAVAILABLE CASH: ${plan['cash']:,.2f}\n{allocations}\n{plan['note']}"
+    return f"AVAILABLE CASH: ${plan['cash']:,.2f}\n{allocations}\n{plan['note']}"
+
+
+def _stop_cell(row):
+    value = row.get('cycle_stop')
+    if not value:
+        return '—'
+    return f"${price_text(value)} ({row['stop_distance']:.1f}% below)"
 
 
 def _risk_plan_html(rows, plan):
     if plan is None:
         return ""
-    stop_rows = "".join(f"<tr><td><b>{escape(r['symbol'])}</b></td><td>{'$'+price_text(r.get('cycle_stop')) if r.get('cycle_stop') else 'N/A'}</td><td>{_n(r.get('stop_distance'),1)}%</td><td>{'$'+_n(r.get('stop_loss_usd')) if r.get('stop_loss_usd') is not None else 'N/A'}</td><td>{escape(r.get('stop_status','N/A'))}</td></tr>" for r in rows if r['signal'] != 'CASH')
     allocations = "".join(f"<p><b>{escape(symbol)}: deploy {a['cash_pct']:.1f}% of available cash (${a['usd']:,.2f})</b><br><small>Approx. {a['quantity']:,.6g} units · weekly stop ${price_text(a['stop'])} · estimated loss to stop ${a['risk_usd']:,.2f} before fees/slippage · target 2 reward/risk {a['reward_risk']:.1f}:1</small></p>" for symbol,a in plan['allocations'].items())
-    return f"<h3>Cycle stop losses — advisory, not active orders</h3><div class='scroll'><table><tr><th>Asset</th><th>Stop price</th><th>Below live price</th><th>Loss from current value</th><th>Update</th></tr>{stop_rows}</table></div><p class='muted'><small>Based on completed weekly support minus 0.5 weekly ATR(14). Levels persist; increases require a new completed week and at least 5% improvement. Lower candidates do not loosen existing stops. A stop is a price-touch trigger, not a weekly-close rule. Read-only Coinbase access cannot place or update orders. A breached level stays flagged until the position is reviewed. Actual losses may exceed estimates; stop-limit orders may not fill.</small></p><h3>Personalized cash deployment</h3><p><b>Verified available cash: ${plan['cash']:,.2f}</b></p>{allocations}<p>{escape(plan['note'])}</p>"
+    loss = sum(r.get('stop_loss_usd') or 0 for r in rows)
+    pct = 100*loss/plan.get('total', 0) if plan.get('total') else 0
+    return f"<p><b>Modeled loss if all cycle stops hit: ${loss:,.0f} ({pct:.1f}% of priced portfolio).</b> <small>Approximate; fills can be worse. Suggested levels are not active orders.</small></p><h3>Cash deployment</h3><p><b>Available: ${plan['cash']:,.2f}</b></p>{allocations}<p>{escape(plan['note'])}</p>"

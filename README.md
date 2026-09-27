@@ -115,13 +115,15 @@ Portfolio report rows exclude balances valued at $5 or less and are ordered by c
 
 ### Persistent cycle stops and available-cash suggestions
 
-Daily and weekly reports include an advisory cycle-stop table. Stops are derived
+Daily and weekly portfolio tables include one advisory cycle-stop column. Stops are derived
 from the most recent confirmed weekly swing low (two completed weeks on either
 side), or the lowest low of the last 12 completed weeks when no pivot exists,
 minus 0.5 times weekly ATR(14). At least 15 completed weeks are required.
-These are proposed price-touch stops, not weekly-close exit rules. Wide weekly
-stops can allow substantial losses; the report shows distance and estimated
-loss from the current portfolio value before fees and slippage.
+Structural suggestions are capped at 15% below the live price. A second limit
+caps modeled loss to 2% of the priced portfolio per asset and 6% overall,
+bringing stop levels closer when concentration requires it. The report shows
+the aggregate modeled loss. A capped level may be inside normal volatility;
+review it against the chart before placing an order.
 
 `state.json` on `scanner-data` persists levels. A stop can ratchet upward only on
 a new completed week and when the proposed level improves by at least 5%.
@@ -139,8 +141,9 @@ Default limits in `portfolio_risk` in config.yaml: 10% of cash per asset,
 0.5% modeled portfolio loss per candidate and 1% across the batch. Candidates
 must have BUY plus actionable dip readiness, be inside their entry zone, and
 have target-2 reward/risk at least 2 against the weekly stop. Weekly reports
-also require an actionable weekly entry. Unpriced balances or unavailable live
-cash disable deployment. Recommendations repeat as snapshots, not instructions
+also require an actionable weekly entry. Unpriced balances are disclosed and
+excluded from conservative priced-portfolio sizing; unavailable live cash
+disables deployment. Recommendations repeat as snapshots, not instructions
 to deploy again on every email. They do not execute trades.
 
 This is an unvalidated risk-management overlay; it does not change the existing

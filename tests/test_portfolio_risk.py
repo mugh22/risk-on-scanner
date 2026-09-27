@@ -90,7 +90,7 @@ def test_unsafe_deployment_is_zero(case):
 
 def test_tiny_prices_are_readable_in_both_report_formats():
     assert price_text(.00009512) == '0.00009512'
-    row = dict(symbol='SPELL',cycle_stop=.00009512,stop_distance=15.,stop_loss_usd=1500,
+    row = dict(symbol='SPELL',value=10000,cycle_stop=.00009512,stop_distance=15.,stop_loss_usd=1500,
                stop_status='NEW — NOT PLACED',signal='BUY')
     plan = dict(cash=1000,allocations={},note='DEPLOY 0%')
     assert '0.00009512' in _stop_cell(row)
@@ -117,3 +117,18 @@ def test_existing_position_stops_cap_individual_and_portfolio_loss():
     assert sum(r.get('stop_loss_usd') or 0 for r in rows) <= .06*plan['total'] + 1e-8
     assert all((r.get('stop_loss_usd') or 0) <= .02*plan['total'] + 1e-8 for r in rows)
     assert all(r['stop_distance'] <= 15 + 1e-8 for r in rows if r['symbol'] != 'USDC')
+
+
+def test_loss_summary_exposes_cash_denominator_and_uncovered_holding():
+    rows = [dict(symbol='USDC', signal='CASH', value=5000., cycle_stop=None),
+            dict(symbol='ARB', signal='WATCH', value=3000., cycle_stop=.9,
+                 stop_loss_usd=300.),
+            dict(symbol='AERO', signal='WATCH', value=2000., cycle_stop=None,
+                 stop_loss_usd=None)]
+    html = _risk_plan_html(rows, dict(total=10000, cash=5000, allocations={},
+                                      note='DEPLOY 0%', unpriced=['MPL']))
+    assert '$300 (6.0% of $5,000 priced crypto)' in html
+    assert 'Covers 1 of 2 priced crypto holdings' in html
+    assert 'No stop estimate for AERO ($2,000 combined)' in html
+    assert 'Unpriced Coinbase balances also excluded: MPL' in html
+    assert 'not a forecast or a maximum loss' in html

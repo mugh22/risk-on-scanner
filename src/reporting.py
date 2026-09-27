@@ -228,6 +228,16 @@ def _risk_plan_html(rows, plan):
     if plan is None:
         return ""
     allocations = "".join(f"<p><b>{escape(symbol)}: deploy {a['cash_pct']:.1f}% of available cash (${a['usd']:,.2f})</b><br><small>Approx. {a['quantity']:,.6g} units · weekly stop ${price_text(a['stop'])} · estimated loss to stop ${a['risk_usd']:,.2f} before fees/slippage · target 2 reward/risk {a['reward_risk']:.1f}:1</small></p>" for symbol,a in plan['allocations'].items())
-    loss = sum(r.get('stop_loss_usd') or 0 for r in rows)
-    pct = 100*loss/plan.get('total', 0) if plan.get('total') else 0
-    return f"<p><b>Modeled loss if all cycle stops hit: ${loss:,.0f} ({pct:.1f}% of priced portfolio).</b> <small>Approximate; fills can be worse. Suggested levels are not active orders.</small></p><h3>Cash deployment</h3><p><b>Available: ${plan['cash']:,.2f}</b></p>{allocations}<p>{escape(plan['note'])}</p>"
+    crypto = [r for r in rows if r['signal'] != 'CASH']
+    covered = [r for r in crypto if r.get('cycle_stop') and r.get('stop_loss_usd') is not None]
+    uncovered = [r for r in crypto if r not in covered]
+    loss = sum(r['stop_loss_usd'] for r in covered)
+    crypto_value = sum(r['value'] for r in crypto)
+    pct = 100*loss/crypto_value if crypto_value else 0
+    uncovered_value = sum(r['value'] for r in uncovered)
+    omitted = (f" No stop estimate for {escape(', '.join(r['symbol'] for r in uncovered))} (${uncovered_value:,.0f} combined)." if uncovered else "")
+    unpriced = (f" Unpriced Coinbase balances also excluded: {escape(', '.join(plan.get('unpriced', [])))}." if plan.get('unpriced') else "")
+    summary = (f"<p><b>Modeled loss to suggested stops: ${loss:,.0f} ({pct:.1f}% of ${crypto_value:,.0f} priced crypto).</b> "
+               f"<small>Covers {len(covered)} of {len(crypto)} priced crypto holdings.{omitted}{unpriced} "
+               "This is a capped scenario, not a forecast or a maximum loss; no orders are active and fills can be worse.</small></p>")
+    return f"{summary}<h3>Cash deployment</h3><p><b>Available: ${plan['cash']:,.2f}</b></p>{allocations}<p>{escape(plan['note'])}</p>"

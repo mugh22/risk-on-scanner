@@ -17,6 +17,7 @@ from .exit_risk import assess_exit_risk
 from .indicators import atr, ema, macd, period_return, rsi
 from .market_data import BinanceClient
 from .portfolio import fallback_spot_prices, load_portfolio
+from .portfolio_risk import build_risk_plan
 from .profit_protection import assess_profit_protection, heat_call
 from .positioning import assess_positioning
 from .reporting import render, render_weekly
@@ -203,9 +204,14 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
                 row["weekly_action"] = (effective_exit_call if row["symbol"] != "BTC" and effective_exit_call.startswith(("REDUCE", "EXIT"))
                                         else holding_action(item, row["allocation"], decision_exit_score))
                 row["weekly_entry_action"] = entry_action(item, weekly_context, decision_exit_score)
-        html,text=render_weekly(weekly_context,weekly_items,portfolio_rows,portfolio_note,exit_risk,dominance,quote_time,quote_source)
+        risk_plan, cycle_stops = build_risk_plan(holdings, portfolio_rows, {"BTC": btc_frame, **frames}, [btc, *coins], previous.get("cycle_stops"), portfolio_note, decision_exit_score, cfg.get("portfolio_risk"), weekly_items, weekly_context)
+        for row in portfolio_rows:
+            if "BREACHED" in row.get("stop_status", ""):
+                row["weekly_action"] = "STOP BREACHED — REVIEW POSITION"
+        html,text=render_weekly(weekly_context,weekly_items,portfolio_rows,portfolio_note,exit_risk,dominance,quote_time,quote_source,risk_plan)
     else:
-        html,text=render(score,prior_score,coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,positioning,quote_time,quote_source)
+        risk_plan, cycle_stops = build_risk_plan(holdings, portfolio_rows, {"BTC": btc_frame, **frames}, [btc, *coins], previous.get("cycle_stops"), portfolio_note, decision_exit_score, cfg.get("portfolio_risk"))
+        html,text=render(score,prior_score,coins,notes,context,exit_risk,history,dominance,portfolio_rows,portfolio_note,market_heat,positioning,quote_time,quote_source,risk_plan)
     out=Path(report_dir); out.mkdir(parents=True,exist_ok=True); (out/"report.html").write_text(html); (out/"report.txt").write_text(text)
     new_buys=[n for n in notes if n.startswith("NEW BUY")]
     if report_mode == "weekly": subject=f"Weekly Crypto Outlook: {weekly_context['posture']} | 2–6 Week Window"
@@ -213,7 +219,7 @@ def run(config_path: str, state_path: str, report_dir: str, no_email: bool = Fal
     elif new_buys: subject=f"🚨 {len(new_buys)} NEW BUY SIGNAL{'S' if len(new_buys)!=1 else ''} | Risk-On {score:.0f}"
     else: subject=f"Crypto Market Decision: {exit_risk.call} | Risk-On {score:.0f}"
     if cfg["email"]["enabled"] and not no_email: send(subject,html,text)
-    state={"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"exit_risk_components":exit_risk.components,"exit_risk_metrics":exit_risk.metrics,"exit_policy_call":effective_exit_call,"exit_state_persisted":exit_state_persisted,"dominance":dominance or previous.get("dominance",{}),"signals":signals,"last_email_window":previous.get("last_email_window")}
+    state={"cycle_stops":cycle_stops,"cash_deployment":risk_plan["allocations"],"model_version":MODEL_VERSION,"risk_score":score,"exit_risk":exit_risk.score,"exit_risk_history":history,"exit_risk_components":exit_risk.components,"exit_risk_metrics":exit_risk.metrics,"exit_policy_call":effective_exit_call,"exit_state_persisted":exit_state_persisted,"dominance":dominance or previous.get("dominance",{}),"signals":signals,"last_email_window":previous.get("last_email_window")}
     save(state_path,state)
     append_run(history_path,{**state,"regime":regime(score),"buy_count":sum(c.signal=="BUY" for c in coins),"watch_count":sum(c.signal=="WATCH" for c in coins)})
     LOG.info("Analyzed %d assets; %s; exit risk %.0f; BUY=%d WATCH=%d",len(coins),regime(score),exit_risk.score,sum(c.signal=="BUY" for c in coins),sum(c.signal=="WATCH" for c in coins)); return 0

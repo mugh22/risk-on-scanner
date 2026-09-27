@@ -112,3 +112,37 @@ The key must be View/read-only; never grant Trade or Transfer permissions.
 The workflow logs only the number of non-zero balances loaded; credential values and holdings are never logged.
 
 Portfolio report rows exclude balances valued at $5 or less and are ordered by current allocation, largest first.
+
+### Persistent cycle stops and available-cash suggestions
+
+Daily and weekly reports include an advisory cycle-stop table. Stops are derived
+from the most recent confirmed weekly swing low (two completed weeks on either
+side), or the lowest low of the last 12 completed weeks when no pivot exists,
+minus 0.5 times weekly ATR(14). At least 15 completed weeks are required.
+These are proposed price-touch stops, not weekly-close exit rules. Wide weekly
+stops can allow substantial losses; the report shows distance and estimated
+loss from the current portfolio value before fees and slippage.
+
+`state.json` on `scanner-data` persists levels. A stop can ratchet upward only on
+a new completed week and when the proposed level improves by at least 5%.
+Lower candidates retain the prior level. A breach stays flagged until review;
+to reset after a confirmed exit/re-entry, remove that symbol's `cycle_stops`
+entry in scanner-data/state.json. Existing exchange orders are not read or
+synchronized: a proposed increase is not an order amendment. Coinbase remains
+read-only. Users must place/review orders themselves; stop-limit orders may not
+fill, and gaps/slippage can exceed the illustrated loss.
+
+Cash proposals use live **available** USD/USDC/USDT, excluding Coinbase holds.
+Stablecoins are estimated at $1. Issue fallback cash is never spendable cash.
+Default limits in `portfolio_risk` in config.yaml: 10% of cash per asset,
+30% per report, a 15% portfolio reserve, 20% portfolio allocation per asset,
+0.5% modeled portfolio loss per candidate and 1% across the batch. Candidates
+must have BUY plus actionable dip readiness, be inside their entry zone, and
+have target-2 reward/risk at least 2 against the weekly stop. Weekly reports
+also require an actionable weekly entry. Unpriced balances or unavailable live
+cash disable deployment. Recommendations repeat as snapshots, not instructions
+to deploy again on every email. They do not execute trades.
+
+This is an unvalidated risk-management overlay; it does not change the existing
+signal model or assert improved investment/backtest accuracy. Unit tests cover
+cash bounds, stop persistence, breach handling and price precision.

@@ -171,7 +171,7 @@ def test_coinbase_balances_are_combined_and_issue_metadata_is_preserved():
     ]
     live = holdings_from_accounts(accounts)
     merged = merge_holdings(live, [Holding("ARB", 999, .55, 20), Holding("AERO", 10, 1.1)])
-    assert merged[0] == Holding("ARB", 107, .55, 20)
+    assert merged[0] == Holding("ARB", 107, .55, 20, 102)
     assert merged[1] == Holding("AERO", 10, 1.1)
 
 

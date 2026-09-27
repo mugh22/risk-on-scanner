@@ -22,14 +22,17 @@ def _amount(value: object) -> float:
 def holdings_from_accounts(accounts: list[dict]) -> list[Holding]:
     """Combine duplicate Coinbase wallets and include funds currently on hold."""
     quantities: dict[str, float] = {}
+    available: dict[str, float] = {}
     for account in accounts:
         symbol = str(account.get("currency", "")).upper().strip()
         if not symbol:
             continue
-        quantity = _amount(account.get("available_balance")) + _amount(account.get("hold"))
+        free = max(0, _amount(account.get("available_balance")))
+        quantity = free + _amount(account.get("hold"))
         if quantity > 1e-12:
             quantities[symbol] = quantities.get(symbol, 0.0) + quantity
-    return [Holding(symbol, quantity) for symbol, quantity in sorted(quantities.items())]
+            available[symbol] = available.get(symbol, 0.0) + free
+    return [Holding(symbol, quantity, available_quantity=available[symbol]) for symbol, quantity in sorted(quantities.items())]
 
 
 def fetch_coinbase_holdings(client_factory: Callable | None = None) -> tuple[list[Holding], str]:
@@ -69,7 +72,7 @@ def merge_holdings(coinbase: list[Holding], manual: list[Holding]) -> list[Holdi
         override = issue.get(item.symbol)
         merged.append(Holding(item.symbol, item.quantity,
                               override.average_cost if override else None,
-                              override.target_allocation if override else None))
+                              override.target_allocation if override else None, item.available_quantity))
         seen.add(item.symbol)
     merged.extend(item for item in manual if item.symbol not in seen)
     return merged

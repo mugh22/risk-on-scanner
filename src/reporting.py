@@ -7,9 +7,12 @@ from .exit_risk import ExitRiskResult
 from .scoring import CoinResult, regime
 from .positioning import PositioningResult
 from .weekly import WeeklySnapshot, entry_action
+from .portfolio_risk import price_text
 
 
 def _n(value: float | None, digits: int = 2) -> str:
+    if digits == 4:
+        return price_text(value)
     return "N/A" if value is None else f"{value:,.{digits}f}"
 
 
@@ -70,7 +73,7 @@ def _portfolio_html(portfolio_rows: list[dict], portfolio_note: str | None) -> s
         for row in actions
     )
     rows = "".join(
-        f"<tr><td><b>{escape(row['symbol'])}</b></td><td>{row['quantity']:,.6g}</td><td>${row['price']:,.4f}</td>"
+        f"<tr><td><b>{escape(row['symbol'])}</b></td><td>{row['quantity']:,.6g}</td><td>${price_text(row['price'])}</td>"
         f"<td>${row['value']:,.2f}</td><td>{row['allocation']:.1f}%</td><td>{row['pnl']}</td>"
         f"<td>{escape(row['signal'])}</td><td><b>{row['heat']:.0f}</b></td><td><b>{escape(row.get('deployment','NOT SCORED'))}</b></td><td>{escape(row['action'])}</td></tr>"
         for row in portfolio_rows
@@ -86,6 +89,7 @@ def render(
     portfolio_note: str | None = None, market_heat: dict | None = None,
     positioning: PositioningResult | None = None,
     quote_time: datetime | None = None, quote_source: str | None = None,
+    risk_plan: dict | None = None,
 ) -> tuple[str, str]:
     portfolio_rows = portfolio_rows or []
     market_heat = market_heat or {"score": 0, "level": "LOW", "action": "HOLD"}
@@ -95,7 +99,7 @@ def render(
     buys = [c for c in ranked if c.signal == "BUY"]
     others = [c for c in ranked if c.signal != "BUY"]
     top = buys + others[:max(0, 10-len(buys))]
-    rows = "".join(f"<tr><td><b>{escape(c.symbol)}</b></td><td>{c.score:.0f}</td><td><b>{c.signal}</b></td><td><b>{escape(c.deployment_status)}</b></td><td>${_n(c.live_price, 4)}</td><td>${_n(c.price, 4)}</td><td>{c.rel_30d:+.1f}%</td><td>{c.weekly_rel:+.1f}%</td><td>{c.daily_rel_confirmations}/3</td><td>{c.rsi:.1f}</td><td>{c.volume_ratio:.1f}x</td><td>{_n(c.entry_low,4)}–{_n(c.entry_high,4)}</td><td>{_n(c.target1,4)} / {_n(c.target2,4)}</td><td>{_n(c.invalidation,4)}</td></tr>" for c in top)
+    rows = "".join(f"<tr><td><b>{escape(c.symbol)}</b></td><td>{c.score:.0f}</td><td><b>{c.signal}</b></td><td>{_deployment_label(c.symbol, risk_plan)}</td><td><b>{escape(c.deployment_status)}</b></td><td>${_n(c.live_price, 4)}</td><td>${_n(c.price, 4)}</td><td>{c.rel_30d:+.1f}%</td><td>{c.weekly_rel:+.1f}%</td><td>{c.daily_rel_confirmations}/3</td><td>{c.rsi:.1f}</td><td>{c.volume_ratio:.1f}x</td><td>{_n(c.entry_low,4)}–{_n(c.entry_high,4)}</td><td>{_n(c.target1,4)} / {_n(c.target2,4)}</td><td>{_n(c.invalidation,4)}</td></tr>" for c in top)
     updates = "".join(f"<li>{escape(n)}</li>" for n in notes) or "<li>No material signal change.</li>"
     evidence = exit_risk.red_flags or exit_risk.supports or ["No confirmed broad exit flag."]
     evidence_html = "".join(f"<li>{escape(item)}</li>" for item in evidence[:4])
@@ -124,16 +128,17 @@ def render(
 {positioning_html}
 <div class='decision' style='background:{_risk_color(exit_risk.score)}'><div class='score'>ALT EXIT RISK: {exit_risk.score:.0f}/100 — {exit_risk.level}</div><div class='call'>{escape(exit_risk.call)}</div><div>{escape(exit_risk.summary)}</div></div>
 <div class='heat' style='border-color:{_heat_color(market_heat['score'])}'><small>RALLY HEAT / PROFIT PROTECTION: {market_heat['score']:.0f}/100 — {escape(market_heat['level'])}</small><br><b>{escape(market_heat['action'])}</b></div>
-<h2>Your portfolio — actions first</h2>{_portfolio_html(portfolio_rows, portfolio_note)}
+<h2>Your portfolio — actions first</h2>{_portfolio_html(portfolio_rows, portfolio_note)}{_risk_plan_html(portfolio_rows, risk_plan)}
 <h2>What changed</h2><ul class='compact'>{updates}</ul>
 <h2>Why this call</h2><ul class='compact'>{evidence_html}</ul>
 <div class='details'><h2>Market evidence</h2>{positioning_evidence}<h3>Exit-risk components</h3><table role='presentation' class='components'><tr><th>Component</th><th>Risk bar</th><th>Score</th><th>Direction</th></tr>{_bars(exit_risk.components, exit_risk.directions)}</table><p class='muted'><small>Score is confirmed risk. Direction compares the underlying evidence with the previous scan and can warn before a score threshold is crossed.</small></p><h3>Exit-risk trend</h3>{_history_chart(history)}
 <h3>{title}</h3><div class='badge'>{delta}</div><p><b>Closed-candle evidence:</b> 30-day regime {context['month_regime']:.0f}/100 · Weekly close {context['weekly_close']:.0f}/100 · Last 3 daily closes {context['last_3_closes']:.0f}/100</p><p>BTC trend: {'Constructive' if context['btc_constructive'] else 'Weak/mixed'}<br>ETH/BTC: {'Strengthening' if context['eth_btc_positive'] else 'Weakening'}<br>Breadth above EMA20: {context['breadth_20']:.0f}%<br>Breadth outperforming BTC (30D): {context['breadth_rel30']:.0f}%<br>Constructive completed weekly structures: {context['weekly_breadth']:.0f}%<br>Confirming 2 of last 3 daily closes vs BTC: {context['daily_confirmation_breadth']:.0f}%</p>{dominance_html}
-<h2>Market opportunities</h2><p class='muted'>Dip readiness combines each asset's USD structure, BTC-relative strength, and the overall BTC market window. Live quotes fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S UTC} from {escape(quote_source or 'live market source')}.</p><div class='scroll'><table><tr><th>Asset</th><th>Score</th><th>Signal</th><th>Dip readiness</th><th>Live price</th><th>Signal close</th><th>30D/BTC</th><th>Week/BTC</th><th>3D confirms</th><th>RSI</th><th>Vol</th><th>Entry zone</th><th>Targets</th><th>Invalidation</th></tr>{rows}</table></div></div>
+<h2>Market opportunities</h2><p class='muted'>Dip readiness combines each asset's USD structure, BTC-relative strength, and the overall BTC market window. Live quotes fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M:%S UTC} from {escape(quote_source or 'live market source')}.</p><div class='scroll'><table><tr><th>Asset</th><th>Score</th><th>Signal</th><th>Deploy available cash</th><th>Dip readiness</th><th>Live price</th><th>Signal close</th><th>30D/BTC</th><th>Week/BTC</th><th>3D confirms</th><th>RSI</th><th>Vol</th><th>Entry zone</th><th>Targets</th><th>Invalidation</th></tr>{rows}</table></div></div>
 <p><small>Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}. Signals use completed daily and weekly candles; intraday movement cannot flip a confirmed call. Quantitative research only; not financial advice or a guarantee.</small></p></body></html>"""
     portfolio_text = "\n".join(f"{r['symbol']}: {r['action']} | heat {r['heat']:.0f} | allocation {r['allocation']:.1f}%" for r in portfolio_rows) or (portfolio_note or "Portfolio not configured.")
     positioning_text = "" if not positioning else f"MARKET: {positioning.market_regime}\nALT ROTATION: {positioning.rotation_phase}\nNEW CAPITAL: {positioning.deployment_status}\n{positioning.deployment_action}\nEXISTING POSITIONS: {positioning.existing_action}\nRESERVE BAND: {positioning.cash_band}\n\n"
     text = positioning_text + f"ALT EXIT RISK: {exit_risk.score:.0f}/100 — {exit_risk.level}\nCALL: {exit_risk.call}\nRALLY HEAT: {market_heat['score']:.0f}/100 — {market_heat['action']}\n\nYOUR PORTFOLIO\n{portfolio_text}\n\nCHANGES\n" + "\n".join(notes or ["No material signal change."]) + "\n\nMARKET EVIDENCE\n" + "\n".join(f"- {x}" for x in evidence) + "\n\n" + title + "\n" + delta + "\n\nTechnical research only; not financial advice."
+    text += "\n\n" + _risk_plan_text(portfolio_rows, risk_plan)
     return html, text
 
 
@@ -141,6 +146,7 @@ def render_weekly(
     market: dict, snapshots: dict[str, WeeklySnapshot], portfolio_rows: list[dict],
     portfolio_note: str | None, exit_risk: ExitRiskResult, dominance: dict | None,
     quote_time: datetime | None, quote_source: str | None,
+    risk_plan: dict | None = None,
 ) -> tuple[str, str]:
     """Render a portfolio-first report using only completed weekly structure."""
     color = _risk_color(100 - market["score"])
@@ -165,7 +171,7 @@ def render_weekly(
     leaders = "".join(
         f"<tr><td><b>{escape(item.symbol)}</b></td><td>{escape(item.trend)}</td><td>{item.return_4w:+.1f}%</td>"
         f"<td>{item.relative_4w:+.1f}%</td><td>{item.relative_12w:+.1f}%</td><td>{item.positive_weeks}/3</td>"
-        f"<td>{item.drawdown_12w:.1f}%</td><td><b>{escape(entry_action(item, market, weekly_exit_score))}</b></td></tr>" for item in ranked[:10]
+        f"<td>{item.drawdown_12w:.1f}%</td><td><b>{escape(entry_action(item, market, weekly_exit_score))}</b></td><td>{_deployment_label(item.symbol, risk_plan)}</td></tr>" for item in ranked[:10]
     )
     btc = snapshots.get("BTC")
     btc_line = "Unavailable" if not btc else f"{btc.trend} · 4W {btc.return_4w:+.1f}% · 12W {btc.return_12w:+.1f}% · weekly RSI {btc.rsi:.0f}"
@@ -188,10 +194,33 @@ def render_weekly(
 <div class='hero' style='background:{color}'><small>WEEKLY CRYPTO OUTLOOK · COMPLETED CANDLES ONLY</small><br><b>{escape(market['posture'])} — {market['score']:.0f}/100</b><div class='sub'>{escape(market['horizon'])}</div></div>
 <h2>What to do this week</h2><div class='call'><b>Base plan:</b> {escape(base)}</div><div class='call'><b>Portfolio concentration:</b> largest position {concentration:.1f}% · broad exit risk {exit_risk.score:.0f}/100 ({escape(exit_risk.level)})</div>
 <h2>Your portfolio — weekly decisions</h2>{f"<p class='muted'><small>{escape(portfolio_note)}</small></p>" if portfolio_note else ''}<div class='scroll'><table><tr><th>Asset</th><th>Weight</th><th>Weekly trend</th><th>4W</th><th>12W</th><th>4W/BTC</th><th>12W/BTC</th><th>W-RSI</th><th>Holder action</th><th>New-capital action</th></tr>{''.join(portfolio)}</table></div>
+{_risk_plan_html(portfolio_rows, risk_plan)}
 <h2>Multi-week market structure</h2><div class='grid'><div class='metric'><b>{market['above4']:.0f}%</b><small>Above 4W EMA</small></div><div class='metric'><b>{market['above10']:.0f}%</b><small>Above 10W EMA</small></div><div class='metric'><b>{market['rel4']:.0f}%</b><small>Beat BTC over 4W</small></div><div class='metric'><b>{market['rel12']:.0f}%</b><small>Beat BTC over 12W</small></div><div class='metric'><b>{market['distribution']:.0f}%</b><small>Weekly weakening</small></div></div><p><b>BTC weekly:</b> {escape(btc_line)}</p><p><b>Rotation:</b> BTC.D {dominance.get('btc_d',0):.1f}% · ETH.D {dominance.get('eth_d',0):.1f}% · Stablecoin dominance {dominance.get('stable_d',0):.1f}%</p>
 <h2>2–6 week scenario map</h2><div class='scenario'><b>Base:</b> {escape(base)}</div><div class='scenario'><b>Bull confirmation:</b> {escape(bull)}</div><div class='scenario'><b>Bear / protection trigger:</b> {escape(bear)}</div>
-<h2>Weekly relative-strength leaders</h2><div class='scroll'><table><tr><th>Asset</th><th>Trend</th><th>4W</th><th>4W/BTC</th><th>12W/BTC</th><th>Positive weeks</th><th>From 12W high</th><th>New-capital action</th></tr>{leaders}</table></div>
+<h2>Weekly relative-strength leaders</h2><div class='scroll'><table><tr><th>Asset</th><th>Trend</th><th>4W</th><th>4W/BTC</th><th>12W/BTC</th><th>Positive weeks</th><th>From 12W high</th><th>New-capital action</th><th>Deploy available cash</th></tr>{leaders}</table></div>
 <p class='muted'><small>Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}. Live portfolio prices fetched {quote_time or datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC} from {escape(quote_source or 'live source')}; trend decisions use completed weekly candles. The 2–6 week window is scenario analysis, not a price prediction or guarantee.</small></p></body></html>"""
     actions = "\n".join(f"{row['symbol']}: holder={row.get('weekly_action', row.get('action','NOT SCORED'))}; new capital={row.get('weekly_entry_action','WATCH')}" for row in portfolio_rows)
     text = f"WEEKLY CRYPTO OUTLOOK: {market['posture']} ({market['score']:.0f}/100)\n{market['horizon']}\n\nBASE PLAN\n{base}\n\nPORTFOLIO\n{actions or portfolio_note or 'Not configured'}\n\nSCENARIOS\nBull: {bull}\nBear: {bear}\n\nCompleted weekly-candle research; not financial advice."
+    text += "\n\n" + _risk_plan_text(portfolio_rows, risk_plan)
     return html, text
+
+
+def _deployment_label(symbol, plan):
+    item = (plan or {}).get("allocations", {}).get(symbol)
+    return f"{item['cash_pct']:.1f}% (${item['usd']:,.2f})" if item else "0% — no allocation"
+
+
+def _risk_plan_text(rows, plan):
+    if plan is None:
+        return ""
+    stops = "\n".join(f"{r['symbol']}: cycle stop ${price_text(r.get('cycle_stop'))} | {r.get('stop_status','N/A')}" for r in rows)
+    allocations = "\n".join(f"{symbol}: DEPLOY {a['cash_pct']:.1f}% of available cash (${a['usd']:,.2f}); estimated risk to weekly stop ${a['risk_usd']:,.2f}; target2 reward/risk {a['reward_risk']:.1f}" for symbol,a in plan['allocations'].items())
+    return f"CYCLE STOP PLAN — ADVISORY, NOT ACTIVE ORDERS\n{stops}\nWeekly support minus 0.5 weekly ATR; retain prior stop unless confirmed support raises it at least 5%. Stops never automatically loosen. Trigger is price touching the level, not a weekly close. Stops may slip; stop-limit orders may not fill.\nAVAILABLE CASH: ${plan['cash']:,.2f}\n{allocations}\n{plan['note']}"
+
+
+def _risk_plan_html(rows, plan):
+    if plan is None:
+        return ""
+    stop_rows = "".join(f"<tr><td><b>{escape(r['symbol'])}</b></td><td>{'$'+price_text(r.get('cycle_stop')) if r.get('cycle_stop') else 'N/A'}</td><td>{_n(r.get('stop_distance'),1)}%</td><td>{'$'+_n(r.get('stop_loss_usd')) if r.get('stop_loss_usd') is not None else 'N/A'}</td><td>{escape(r.get('stop_status','N/A'))}</td></tr>" for r in rows if r['signal'] != 'CASH')
+    allocations = "".join(f"<p><b>{escape(symbol)}: deploy {a['cash_pct']:.1f}% of available cash (${a['usd']:,.2f})</b><br><small>Approx. {a['quantity']:,.6g} units · weekly stop ${price_text(a['stop'])} · estimated loss to stop ${a['risk_usd']:,.2f} before fees/slippage · target 2 reward/risk {a['reward_risk']:.1f}:1</small></p>" for symbol,a in plan['allocations'].items())
+    return f"<h3>Cycle stop losses — advisory, not active orders</h3><div class='scroll'><table><tr><th>Asset</th><th>Stop price</th><th>Below live price</th><th>Loss from current value</th><th>Update</th></tr>{stop_rows}</table></div><p class='muted'><small>Based on completed weekly support minus 0.5 weekly ATR(14). Levels persist; increases require a new completed week and at least 5% improvement. Lower candidates do not loosen existing stops. A stop is a price-touch trigger, not a weekly-close rule. Read-only Coinbase access cannot place or update orders. A breached level stays flagged until the position is reviewed. Actual losses may exceed estimates; stop-limit orders may not fill.</small></p><h3>Personalized cash deployment</h3><p><b>Verified available cash: ${plan['cash']:,.2f}</b></p>{allocations}<p>{escape(plan['note'])}</p>"
